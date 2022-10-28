@@ -1,0 +1,77 @@
+---
+title: 'Practical 01 SG: Descriptive analysis of genetic markers'
+author: "Carlos Moyano & Kleber Reyes"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Setup environment
+
+## Clear environment
+```{r clear}
+rm(list = ls(all.names = TRUE))
+```
+
+## Load packages
+```{r load packages, message=FALSE}
+library(genetics)
+```
+
+# SNP dataset
+
+## Load data
+```{r clear}
+filename <- url("http://www-eio.upc.es/~jan/data/bsg/TSICHR22RAW.raw")
+italianData <- read.table(filename, header=TRUE)
+ls()
+```
+
+## Load data
+```{r clear}
+individualData <- italianData[,c(2,5)]
+geneticData <- italianData[,7:20655]
+```
+
+Notice that the genetic variants are identifed by an “rs” identifier.
+The genetic data is coded in the (0, 1, 2) format with 0=AA, 1=AB, 2=BB.
+
+## Questions
+
+### How many variants are there in this database? What percentage of the data is missing? How many individuals in the database are males and how many are females?
+```{r}
+
+```
+
+### Calculate the percentage of monomorphic variants. Exclude all monomorphics from the database for all posterior computations of the practical. How many variants do remain in your database?
+```{r}
+
+```
+
+### Report the genotype counts and the minor allele count of polymorphism rs8138488_C, and calculate the MAF of this variant.
+```{r}
+
+```
+
+### Compute the minor allele frequencies (MAF) for all markers, and make a histogram of it. Does the MAF follow a uniform distribution? What percentage of the markers have a MAF below 0.05? And below 0.01? Can you explain the observed pattern?
+```{r}
+
+```
+
+### Calculate the minor allele frequency for males and for females and present a scatterplot of these variables. What do you observe? Calculate and report their correlation coefficient.
+```{r}
+
+```
+
+### Calculate the observed heterozygosity (Ho), and make a histogram of it. What is, theoretically, the range of variation of this statistic?
+```{r}
+
+```
+
+### Compute for each marker its expected heterozygosity (He), where the expected heterozygosity for a bi-allelic marker is defined as 1 − E(from i=1 to k) pi^2 , where pi is the frequency of the ith allele. Make a histogram of the expected heterozygosity. What is, theoretically, the range of variation of this statistic? What is the average of He for this database?
+```{r}
+
+```
