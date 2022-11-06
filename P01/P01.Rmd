@@ -17,8 +17,10 @@ rm(list = ls(all.names = TRUE))
 ```
 
 ## Load packages
-```{r load packages, message=FALSE}
+```{r load packages, message=FALSE, warning=FALSE}
 library(genetics)
+library(dplyr)
+library(fitdistrplus)
 ```
 
 # SNP dataset
@@ -34,9 +36,11 @@ ls()
 ```{r clear}
 individualData <- italianData[,c(2,5)]
 geneticData <- italianData[,7:20655]
+
+rm(italianData)
 ```
 
-Notice that the genetic variants are identifed by an “rs” identifier.
+Notice that the genetic variants are identified by an “rs” identifier.
 The genetic data is coded in the (0, 1, 2) format with 0=AA, 1=AB, 2=BB.
 
 ## Questions
@@ -44,21 +48,80 @@ The genetic data is coded in the (0, 1, 2) format with 0=AA, 1=AB, 2=BB.
 ### How many variants are there in this database? What percentage of the data is missing? How many individuals in the database are males and how many are females?
 ```{r}
 
+variants <- ncol(geneticData); variants # variants in the database
+individuals <- nrow(geneticData) 
+perc.mis <- 100*sum(is.na(geneticData))/(variants*individuals); perc.mis # 0.1987%
+
+# Let's assume values 1 is male and value 2 is female
+perc.male <- 100*length(which(individualData$SEX == 1)) / individuals
+perc.female <- 100*length(which(individualData$SEX == 2)) / individuals
+perc.male; perc.female # 51.96% male - 48.04% female
+
 ```
 
 ### Calculate the percentage of monomorphic variants. Exclude all monomorphics from the database for all posterior computations of the practical. How many variants do remain in your database?
 ```{r}
+#Monomorphic -> AA or BB (0 or 2)
+
+cols <- which(colSums(geneticData == 1, na.rm = TRUE) > 0) # Non monomorphic (contains AB)
+variants.poly <-length(cols); variants.poly # 18274 in db
+
+variants.mono <- variants-variants.poly
+
+perc.mono <- 100*variants.mono/variants; perc.mono # 11.50177
+
+geneticData.poly <- geneticData[, cols]
 
 ```
 
 ### Report the genotype counts and the minor allele count of polymorphism rs8138488_C, and calculate the MAF of this variant.
+
 ```{r}
+#MAF -> Minor allele frequency
+
+rs8138488_C <- recode(geneticData.poly[, "rs8138488_C"], `0`="AA", `1`="AB", `2`="BB")
+
+rs8138488_C.g <- genotype(rs8138488_C,sep="")
+
+rs8138488_C.g.summary <- summary(rs8138488_C.g)
+
+rs8138488_C.g.summary$genotype.freq
+rs8138488_C.g.summary$allele.freq
+
+MAF = min(rs8138488_C.g.summary$allele.freq[,"Proportion"]); MAF
 
 ```
 
 ### Compute the minor allele frequencies (MAF) for all markers, and make a histogram of it. Does the MAF follow a uniform distribution? What percentage of the markers have a MAF below 0.05? And below 0.01? Can you explain the observed pattern?
 ```{r}
 
+maf.list <- vector(mode="numeric", length=variants.poly)
+
+for (i in 1:variants.poly) {
+  variant <- recode(geneticData.poly[, i], `0`="AA", `1`="AB", `2`="BB")
+  variant.g <- genotype(variant,sep="")
+  
+  variant.g.summary <- summary(variant.g)
+  
+  maf.list[i] = min(variant.g.summary$allele.freq[,"Proportion"], na.rm = T)
+}
+
+```
+
+
+```{r}
+hist(maf.list, breaks=20)
+
+descdist(maf.list)
+
+plot(ecdf(maf.list))
+curve(punif(x, min(maf.list), max(maf.list)), add=TRUE, col="red")
+
+```
+
+```{r}
+maf.005 <- 100 * length(which(maf.list < 0.05)) / variants.poly; maf.005
+maf.001 <- 100 * length(which(maf.list < 0.01)) / variants.poly; maf.001
 ```
 
 ### Calculate the minor allele frequency for males and for females and present a scatterplot of these variables. What do you observe? Calculate and report their correlation coefficient.
