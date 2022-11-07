@@ -28,7 +28,6 @@ library(HardyWeinberg)
 # SNP dataset
 
 ```{r, include=FALSE}
-.# load data
 filename <- url("http://www-eio.upc.es/~jan/data/bsg/TSICHR22RAW.raw")
 italianData <- read.table(filename, header=TRUE)
 ```
@@ -136,14 +135,15 @@ for (i in 1:variants.poly) {
 As for this exercise we have to create an histogram of the MAF values obtained. When we set breaks to 50 we can realize that values between 0 and 0.01 are the most common, but in general, the distribution seems to be uniform. 
 
 Additional plots have been made in order to reinforce our first impressions. The Cullen and Frey graph indicates that it is practically uniform. Same conclusions with ecdf. In all cases, uniform distribution is not perfect due to the observed deviation of the small values.
-```{r}
+
+```{r, echo=FALSE, out.width = "80%", fig.align="center"}
+
 hist(maf.list, breaks=50, xlab="MAF", main="Histogram of MAF")
 descdist(maf.list)
 plot(ecdf(maf.list), xlab="MAF", main="ecdf (MAF)")
 curve(punif(x, min(maf.list), max(maf.list)), add=TRUE, col="red")
 
 ```
-
 
 As we have seen in the previous plots, the distribution is close to be uniform, but it has some deviations. The percentage of markers below 0.05 is 14.18% and and the percentage of markers below 0.01 is 4.68%.
 
@@ -186,41 +186,44 @@ for (i in 1:variants.poly) {
 ```
 
 From the scatterplot we can realize that for the majority of markers, the values are more or less the same for male and female. There are some exceptions in which while for a group the value is 1 for the other values is low. Since the value is calculated using the minimum a value of 1 implies that there is not a second allele for this variant, this means that for this variantions, sex could be important.
-```{r}
-maf.df <- data.frame(maf.male, maf.female)
+```{r, echo=FALSE, out.width = "80%", fig.align="center"}
 
+maf.df <- data.frame(maf.male, maf.female)
 ggplot()+geom_point(data=maf.df, aes(x=maf.male, y=maf.female))
+
 ```
 
-
-We have calculated the correlation using spearman since distributions are not normal. There is a good postivie correlation (0.71) that implies that there is not a great difference among males and females.  
+We have calculated the correlation using spearman since distributions are not normal. There is a high positive correlation (0.71) that implies that there is not a great difference between males and females.  
 ```{r}
 cor(maf.df, method="spearman")
 ```
 
-
 ### 8. Calculate the observed heterozygosity (Ho), and make a histogram of it. What is, theoretically, the range of variation of this statistic?
 
 Observed heterozygosity has been calculated previously. Theoretically, the observed heterozygosity range is from 0 to 1, but in the histogram we can see that the range is from 0 to 0.7.
-```{r}
+```{r, echo=FALSE, out.width = "80%", fig.align="center"}
+
 hist(ho.list, breaks = 20)
 
-#sum(geneticData.poly.female=="AA", na.rm=T)
 ```
 
 ### 9. Compute for each marker its expected heterozygosity (He), where the expected heterozygosity for a bi-allelic marker is defined as 1 − E(from i=1 to k) pi^2 , where pi is the frequency of the ith allele. Make a histogram of the expected heterozygosity. What is, theoretically, the range of variation of this statistic? What is the average of He for this database?
 
 Expected heterozygosity has been calculated previously. Theoretically, the expected heterozygosity range is from 0 to 1, but in the histogram we can see that the range is from 0 to 0.7. The mean He is 0.314.
-```{r}
+```{r, echo=FALSE, out.width = "80%", fig.align="center"}
+
 hist(he.list, breaks = 20)
 mean(he.list)
+
 ```
 
 Since histograms apparently are the same we can calculate the absolute difference. We can see that there is a slighly difference between the 2 values.
-```{r}
+```{r, echo=FALSE, out.width = "80%", fig.align="center"}
+
 plot(x=he.list, y=ho.list, xlab="Expected heterozygosity", ylab="Observed heterozygosity", main="Observed vs. Expected heterozygosity")
 h.diff = abs(ho.list-he.list)
 hist(h.diff, breaks = 3)
+
 ```
 
 # STR dataset
@@ -274,7 +277,7 @@ min(n.alleles.per.str)
 ```
 
 ### 4. Make a table with the number of STRs for a given number of alleles and present a barplot of the number STRs in each category. What is the most common number of alleles for an STR?
-```{r, echo=FALSE}
+```{r, echo=FALSE, out.width = "80%", fig.align="center"}
 
 barplot(table(n.alleles.per.str), xlab="Number of alleles", ylab="Number of STRs")
 
@@ -283,7 +286,7 @@ barplot(table(n.alleles.per.str), xlab="Number of alleles", ylab="Number of STRs
 The most common number of alleles for an STR is 8.
 
 ### 5. Compute the expected heterozygosity for each STR. Make a histogram of the expected heterozygosity over all STRS. Compute the average expected heterozygosity over all STRs.
-```{r, out.width = "80%"}
+```{r}
 
 exp.heter <- function(X, str.index) {
   allele.1 <- as.list(X[,str.index])
@@ -302,12 +305,15 @@ for (str.num in 1:p) {
 }
 exp.heter.per.str <- unlist(exp.heter.per.str.list)
 
-hist(exp.heter.per.str, xlab="Expected heterozygosity", main="Histogram of the expected heterozygosity")
-
 round(mean(exp.heter.per.str), 3) # average expected heterozygosity over all STRs
 
 ```
 
+```{r, out.width = "80%", fig.align="center", echo=FALSE}
+
+hist(exp.heter.per.str, xlab="Expected heterozygosity", main="Histogram of the expected heterozygosity")
+
+```
 ### 6. Calculate also the observed heterozygosity for each STR. Plot observed against expected heterozygosity, using all STRs. What do you observe? (Ho = fAB)
 ```{r}
 
@@ -344,11 +350,15 @@ obs.heter.per.str <- unlist(obs.heter.per.str.list)
 
 ```
 
-```{r echo=FALSE, out.width = "80%"}
+```{r echo=FALSE, out.width = "80%", fig.align="center"}
 
 # Plot observed against expected heterozygosity, using all STRs
 plot(x=exp.heter.per.str, y=obs.heter.per.str, xlab="Expected heterozygosity", ylab="Observed heterozygosity", main="Observed vs. Expected heterozygosity")
 
 ```
 
+The plot above show a clear linear relationship between the Ho and the He.
+
 ### 7. Compare, overall, the results you obtained for the SNP database with those you obtained for the STR database. What differences do you observe between these two types of genetic markers?
+
+In both datasets we have a intense linear relationship between Ho and He, maybe stronger in the case of the Italian sample. We have noted that the Caucasian ancestry sample has an average He over all STRs almost 3 times higher than in the case of the italian sample (0.79 vs. 0.314). This means that, in general, it's more likely for the genetic variables associated to chromosome 21 to come from the same parent.
