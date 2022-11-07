@@ -28,7 +28,7 @@ library(HardyWeinberg)
 # SNP dataset
 
 ```{r, include=FALSE}
-# load data
+.# load data
 filename <- url("http://www-eio.upc.es/~jan/data/bsg/TSICHR22RAW.raw")
 italianData <- read.table(filename, header=TRUE)
 ```
@@ -43,15 +43,13 @@ rm(italianData)
 
 ### 3. How many variants are there in this database? What percentage of the data is missing? How many individuals in the database are males and how many are females?
 
-
-
+Our sample of data has 20659 variants (number of columns of our genetic subset), as for missing data, value is very low taking into account that is common to reach to values around 10%, in our case is less than 1% (0.2%). Finally we have checked the number of males and females. From here on, let's assume values 1 is male and value 2 is female. The dataset appears to be well distributed since we have distribution close to 50-50.
 ```{r}
 
 variants <- ncol(geneticData); variants # variants in the database
 individuals <- nrow(geneticData) 
 perc.mis <- 100*sum(is.na(geneticData))/(variants*individuals); perc.mis # 0.1987%
 
-# Let's assume values 1 is male and value 2 is female
 male.ind <- length(which(individualData$SEX == 1))
 female.ind <- length(which(individualData$SEX == 2))
 
@@ -62,18 +60,21 @@ perc.male; perc.female # 51.96% male - 48.04% female
 ```
 
 ### 4. Calculate the percentage of monomorphic variants (AA or BB). Exclude all monomorphics from the database for all posterior computations of the practical. How many variants do remain in your database?
+
+In order to be efficient, we have calculated first the polymorphic variants (columns that contains AB or BA) that is represented with value 1. If a variant contains a polymorphic we can include it in our final dataset. The rest is used to calculate the percentage of monomorphic variants. The percentage of monomorphic variants is 11.5%, that is, less than a quarter of our dataset. The number of variants that we remain are the number of polymorphic variants previously calculated, 18274.
 ```{r}
 
 cols <- which(colSums(geneticData == 1, na.rm = TRUE) > 0) # Non monomorphic (contains AB)
-variants.poly <-length(cols); variants.poly # 18274 in db
+variants.poly <-length(cols); variants.poly
 variants.mono <- variants-variants.poly
-perc.mono <- 100*variants.mono/variants; perc.mono # 11.50177
+perc.mono <- 100*variants.mono/variants; perc.mono
 geneticData.poly <- geneticData[, cols]
 
 ```
 
 ### 5. Report the genotype counts and the minor allele count of polymorphism rs8138488_C, and calculate the MAF (Minor Allele Frequency) of this variant.
 
+In order to use the genotype function from the genetics package we must recode the variant to transform our numeric codes into a character pairs. Once *rs8138488_C* has been transformed we can use the genotype function without any problem. Genotype is able to calculate the required information. *genotype.freq* returns us a table with count and proportions of the 3 kinds of genotypes we can found. The minor allele count (MAC) and MAF is alelle "B" with 75 appearances and a frequency of 36.76%
 ```{r}
 
 rs8138488_C <- dplyr::recode(geneticData.poly[, "rs8138488_C"], `0`="AA", `1`="AB", `2`="BB")
@@ -81,17 +82,21 @@ rs8138488_C.g <- genotype(rs8138488_C,sep="")
 rs8138488_C.g.summary <- summary(rs8138488_C.g)
 rs8138488_C.g.summary$genotype.freq
 rs8138488_C.g.summary$allele.freq
-MAF = min(rs8138488_C.g.summary$allele.freq[,"Proportion"]); MAF
+MAC = min(rs8138488_C.g.summary$allele.freq[,"Count"]); MAC
+MAF = 100*min(rs8138488_C.g.summary$allele.freq[,"Proportion"]); MAF
 
 ```
 
 ### 6. Compute the minor allele frequencies (MAF) for all markers, and make a histogram of it. Does the MAF follow a uniform distribution? What percentage of the markers have a MAF below 0.05? And below 0.01? Can you explain the observed pattern?
+
+With the aim of answer the next questions, we had to recode all the genetic data to be able to use genotype().
 ```{r}
 for (i in 1:variants.poly) {
   geneticData.poly[, i] <- dplyr::recode(geneticData.poly[, i], `0`="AA", `1`="AB", `2`="BB")
 }
 ```
 
+We had to populate 3 arrays in order to calculate this and the following questions, to avoid redundant operations we take advantage of the same loop to calculate 3 things, the MAF, the observed heterozygosity (Ho) and the expected heterozygosity (He) of each variation. We have calculate the MAF in the same way as the previous exercise. To calculate 'Ho' and 'He' we have used the formulas used in the class slides. The *genotype.freq* table is required to our calculations and we have overlooked the *Hu* value given by genotype(). So, Ho is the frequency of the AB genotype and He is equal to 1 - sum(AA and BB genotypes).
 ```{r}
 
 maf.list <- vector(mode="numeric", length=variants.poly)
@@ -128,7 +133,9 @@ for (i in 1:variants.poly) {
 
 ```
 
+As for this exercise we have to create an histogram of the MAF values obtained. When we set breaks to 50 we can realize that values between 0 and 0.01 are the most common, but in general, the distribution seems to be uniform. 
 
+Additional plots have been made in order to reinforce our first impressions. The Cullen and Frey graph indicates that it is practically uniform. Same conclusions with ecdf. In all cases, uniform distribution is not perfect due to the observed deviation of the small values.
 ```{r}
 hist(maf.list, breaks=50, xlab="MAF", main="Histogram of MAF")
 descdist(maf.list)
@@ -138,7 +145,9 @@ curve(punif(x, min(maf.list), max(maf.list)), add=TRUE, col="red")
 ```
 
 
-As we have seen in the previous plots, the distribution is close to be uniform. 
+As we have seen in the previous plots, the distribution is close to be uniform, but it has some deviations. The percentage of markers below 0.05 is 14.18% and and the percentage of markers below 0.01 is 4.68%.
+
+Since range of values are between 0 and 0.5 we expect that an increase of 0.01 is equivalent to and increment of 2% of the data, but in our case the first 0.01 increase 4.7% and an increase of 0.05 (that should be 10%) is 14.18%. This entails that rare variants (less than 0.05) are more common than the other ones.
 ```{r}
 
 values.under.005 <- length(which(maf.list < 0.05)); values.under.005
@@ -150,6 +159,8 @@ maf.001 <- 100 * values.under.001 / variants.poly; maf.001
 ```
 
 ### 7. Calculate the minor allele frequency for males and for females and present a scatterplot of these variables. What do you observe? Calculate and report their correlation coefficient.
+
+We have done the same as the question 6 but now splitting the dataframe into male individuals and female individuals.
 ```{r}
 
 geneticData.poly.male <- geneticData.poly[ which( individualData$SEX == 1), ]
@@ -174,15 +185,23 @@ for (i in 1:variants.poly) {
 
 ```
 
+From the scatterplot we can realize that for the majority of markers, the values are more or less the same for male and female. There are some exceptions in which while for a group the value is 1 for the other values is low. Since the value is calculated using the minimum a value of 1 implies that there is not a second allele for this variant, this means that for this variantions, sex could be important.
 ```{r}
-#maf.value <- c(maf.male, maf.female)
-#maf.sex <- c(rep("Male", length(maf.male)), rep("Female", length(maf.female)))
 maf.df <- data.frame(maf.male, maf.female)
 
-lgd <- maf.df$maf.sex
 ggplot()+geom_point(data=maf.df, aes(x=maf.male, y=maf.female))
 ```
+
+
+We have calculated the correlation using spearman since distributions are not normal. There is a good postivie correlation (0.71) that implies that there is not a great difference among males and females.  
+```{r}
+cor(maf.df, method="spearman")
+```
+
+
 ### 8. Calculate the observed heterozygosity (Ho), and make a histogram of it. What is, theoretically, the range of variation of this statistic?
+
+Observed heterozygosity has been calculated previously. Theoretically, the observed heterozygosity range is from 0 to 1, but in the histogram we can see that the range is from 0 to 0.7.
 ```{r}
 hist(ho.list, breaks = 20)
 
@@ -190,11 +209,14 @@ hist(ho.list, breaks = 20)
 ```
 
 ### 9. Compute for each marker its expected heterozygosity (He), where the expected heterozygosity for a bi-allelic marker is defined as 1 − E(from i=1 to k) pi^2 , where pi is the frequency of the ith allele. Make a histogram of the expected heterozygosity. What is, theoretically, the range of variation of this statistic? What is the average of He for this database?
+
+Expected heterozygosity has been calculated previously. Theoretically, the expected heterozygosity range is from 0 to 1, but in the histogram we can see that the range is from 0 to 0.7. The mean He is 0.314.
 ```{r}
 hist(he.list, breaks = 20)
 mean(he.list)
 ```
 
+Since histograms apparently are the same we can calculate the absolute difference. We can see that there is a slighly difference between the 2 values.
 ```{r}
 plot(x=he.list, y=ho.list, xlab="Expected heterozygosity", ylab="Observed heterozygosity", main="Observed vs. Expected heterozygosity")
 h.diff = abs(ho.list-he.list)
@@ -224,8 +246,7 @@ p
 
 There are 361 individuals and 29 STRs.
 
-### 3. Write a function that determines the number of alleles for a STR. Determine the number of alleles for each STR in the database. Compute basic descriptive statistics of the number of alleles (mean,
-standard deviation, median, minimum, maximum).
+### 3. Write a function that determines the number of alleles for a STR. Determine the number of alleles for each STR in the database. Compute basic descriptive statistics of the number of alleles (mean, standard deviation, median, minimum, maximum).
 ```{r}
 
 # Function that determines the number of alleles for a STR.
