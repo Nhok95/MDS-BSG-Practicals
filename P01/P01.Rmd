@@ -20,6 +20,7 @@ rm(list = ls(all.names = TRUE))
 ```{r load packages, echo=FALSE, message=FALSE, warning=FALSE}
 library(genetics)
 library(dplyr)
+library(ggplot2)
 library(fitdistrplus)
 library(HardyWeinberg)
 ```
@@ -30,7 +31,6 @@ library(HardyWeinberg)
 # load data
 filename <- url("http://www-eio.upc.es/~jan/data/bsg/TSICHR22RAW.raw")
 italianData <- read.table(filename, header=TRUE)
-ls()
 ```
 
 ```{r, include=FALSE}
@@ -42,6 +42,9 @@ rm(italianData)
 ## Questions about SNP dataset
 
 ### 3. How many variants are there in this database? What percentage of the data is missing? How many individuals in the database are males and how many are females?
+
+
+
 ```{r}
 
 variants <- ncol(geneticData); variants # variants in the database
@@ -49,8 +52,11 @@ individuals <- nrow(geneticData)
 perc.mis <- 100*sum(is.na(geneticData))/(variants*individuals); perc.mis # 0.1987%
 
 # Let's assume values 1 is male and value 2 is female
-perc.male <- 100*length(which(individualData$SEX == 1)) / individuals
-perc.female <- 100*length(which(individualData$SEX == 2)) / individuals
+male.ind <- length(which(individualData$SEX == 1))
+female.ind <- length(which(individualData$SEX == 2))
+
+perc.male <- 100* male.ind / individuals
+perc.female <- 100* female.ind / individuals
 perc.male; perc.female # 51.96% male - 48.04% female
 
 ```
@@ -80,50 +86,119 @@ MAF = min(rs8138488_C.g.summary$allele.freq[,"Proportion"]); MAF
 ```
 
 ### 6. Compute the minor allele frequencies (MAF) for all markers, and make a histogram of it. Does the MAF follow a uniform distribution? What percentage of the markers have a MAF below 0.05? And below 0.01? Can you explain the observed pattern?
+```{r}
+for (i in 1:variants.poly) {
+  geneticData.poly[, i] <- dplyr::recode(geneticData.poly[, i], `0`="AA", `1`="AB", `2`="BB")
+}
+```
 
 ```{r}
 
 maf.list <- vector(mode="numeric", length=variants.poly)
 
+ho.list <- vector(mode="numeric", length=variants.poly)
+he.list <- vector(mode="numeric", length=variants.poly)
+
 for (i in 1:variants.poly) {
-  variant <- dplyr::recode(geneticData.poly[, i], `0`="AA", `1`="AB", `2`="BB")
-  variant.g <- genotype(variant,sep="")
+  variant.g <- genotype(geneticData.poly[, i],sep="")
   variant.g.summary <- summary(variant.g)
-  maf.list[i] = min(variant.g.summary$allele.freq[,"Proportion"], na.rm = T)
+  
+  # MAF
+  maf.list[i] <- min(variant.g.summary$allele.freq[,"Proportion"], na.rm = T)
+  
+  gen.freq <- variant.g.summary$genotype.freq
+  # Ho
+  if ("A/B" %in% rownames(gen.freq)) {
+    ho.list[i] <- gen.freq["A/B",2]
+  } else if ("B/A" %in% rownames(gen.freq)) {
+    ho.list[i] <- gen.freq["B/A",2]
+  }
+  
+  # He
+  sum.p2 <- 0
+  if ("A/A" %in% rownames(gen.freq)) {
+    sum.p2 <- sum.p2 + gen.freq["A/A",2]
+  }
+  if ("B/B" %in% rownames(gen.freq)) {
+    sum.p2 <- sum.p2 + gen.freq["B/B",2]
+  }
+  
+  he.list[i] <- 1- sum.p2
 }
 
 ```
 
 
 ```{r}
-
-hist(maf.list, breaks=20)
+hist(maf.list, breaks=50, xlab="MAF", main="Histogram of MAF")
 descdist(maf.list)
-plot(ecdf(maf.list))
+plot(ecdf(maf.list), xlab="MAF", main="ecdf (MAF)")
 curve(punif(x, min(maf.list), max(maf.list)), add=TRUE, col="red")
 
 ```
 
+
+As we have seen in the previous plots, the distribution is close to be uniform. 
 ```{r}
 
-maf.005 <- 100 * length(which(maf.list < 0.05)) / variants.poly; maf.005
-maf.001 <- 100 * length(which(maf.list < 0.01)) / variants.poly; maf.001
+values.under.005 <- length(which(maf.list < 0.05)); values.under.005
+values.under.001 <- length(which(maf.list < 0.01)); values.under.001
+
+maf.005 <- 100 * values.under.005 / variants.poly; maf.005
+maf.001 <- 100 * values.under.001 / variants.poly; maf.001
 
 ```
 
 ### 7. Calculate the minor allele frequency for males and for females and present a scatterplot of these variables. What do you observe? Calculate and report their correlation coefficient.
 ```{r}
 
+geneticData.poly.male <- geneticData.poly[ which( individualData$SEX == 1), ]
+geneticData.poly.female <- geneticData.poly[which( individualData$SEX == 2), ]
+
+maf.male <- vector(mode="numeric", length=variants.poly)
+maf.female <- vector(mode="numeric", length=variants.poly)
+
+for (i in 1:variants.poly) {
+  variant.g <- genotype(geneticData.poly.male[, i],sep="")
+  variant.g.summary <- summary(variant.g)
+  maf.male[i] = min(variant.g.summary$allele.freq[,"Proportion"], na.rm = T)
+  
+}
+
+for (i in 1:variants.poly) {
+  variant.g <- genotype(geneticData.poly.female[, i],sep="")
+  variant.g.summary <- summary(variant.g)
+  maf.female[i] = min(variant.g.summary$allele.freq[,"Proportion"], na.rm = T)
+  
+}
+
 ```
 
+```{r}
+#maf.value <- c(maf.male, maf.female)
+#maf.sex <- c(rep("Male", length(maf.male)), rep("Female", length(maf.female)))
+maf.df <- data.frame(maf.male, maf.female)
+
+lgd <- maf.df$maf.sex
+ggplot()+geom_point(data=maf.df, aes(x=maf.male, y=maf.female))
+```
 ### 8. Calculate the observed heterozygosity (Ho), and make a histogram of it. What is, theoretically, the range of variation of this statistic?
 ```{r}
+hist(ho.list, breaks = 20)
 
+#sum(geneticData.poly.female=="AA", na.rm=T)
 ```
 
 ### 9. Compute for each marker its expected heterozygosity (He), where the expected heterozygosity for a bi-allelic marker is defined as 1 − E(from i=1 to k) pi^2 , where pi is the frequency of the ith allele. Make a histogram of the expected heterozygosity. What is, theoretically, the range of variation of this statistic? What is the average of He for this database?
 ```{r}
+hist(he.list, breaks = 20)
+mean(he.list)
+```
 
+```{r}
+plot(x=he.list, y=ho.list, xlab="Expected heterozygosity", ylab="Observed heterozygosity", main="Observed vs. Expected heterozygosity")
+h.diff = abs(ho.list-he.list)
+hist(h.diff, breaks = 3)
 ```
 
 # STR dataset
