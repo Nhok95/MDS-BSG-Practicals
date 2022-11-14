@@ -28,6 +28,8 @@ library(data.table)
 
 # Hardy-Weinberg equilibrium
 
+INFO: https://cran.r-project.org/web/packages/data.table/vignettes/datatable-faq.html
+
 ```{r, include=FALSE}
 .# load data
 filename <- "http://www-eio.upc.es/~jan/data/bsg/TSIChr22v4.raw"
@@ -53,8 +55,11 @@ ncol(geneticData.poly)
 
 ## 3. Extract polymorphism rs587756191_T from the datamatrix, and determine its genotype counts. Apply a chi-square test for Hardy-Weinberg equilibrium, with and without continuity correction. Also try an exact test, and a permutation test. You can use function HWChisq, HWExact and HWPerm for this purpose. Do you think this variant is in equilibrium? Argue your answer.
 ```{r}
-geneticData[, "rs587756191_T"]
+rs587756191_T <- dplyr::recode(geneticData.poly$rs587756191_T, `0`="AA", `1`="AB", `2`="BB")
+rs587756191_T.g <- genotype(rs587756191_T,sep="")
+rs587756191_T.g.summary <- summary(rs587756191_T.g)
 
+rs587756191_T.g.summary$genotype.freq #genotype counts
 ```
 
 ## 4. Determine the genotype counts for all these variants, and store them in a p × 3 matrix.
