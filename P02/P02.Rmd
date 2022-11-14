@@ -1,0 +1,146 @@
+---
+title: 'Practical 02 SG: Hardy-Weinberg equilibrium'
+author: "Carlos Moyano & Kleber Reyes"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+rm(list = ls(all.names = TRUE))
+```
+
+```{r load packages, echo=FALSE, message=FALSE, warning=FALSE}
+library(genetics)
+library(dplyr)
+library(ggplot2)
+library(fitdistrplus)
+library(HardyWeinberg)
+library(data.table)
+```
+
+# Hardy-Weinberg equilibrium
+
+```{r, include=FALSE}
+.# load data
+filename <- "http://www-eio.upc.es/~jan/data/bsg/TSIChr22v4.raw"
+geneticData <- fread(filename, drop = c(1:6))
+```
+
+
+## 2. How many individuals does the database contain, and how many variants? What percentage of the variants is monomorphic? Remove all monomorphic SNPs from the database. How many variants remain in the database?
+```{r}
+variants <- ncol(geneticData); variants;
+individuals <- nrow(geneticData); individuals;
+
+cols <- which(colSums(geneticData == 1, na.rm = TRUE) > 0) # Non monomorphic (contains AB)
+variants.poly <-length(cols); variants.poly
+variants.mono <- variants-variants.poly
+perc.mono <- 100*variants.mono/variants; perc.mono
+geneticData.poly <- geneticData[, cols]
+
+```
+
+## 3. Extract polymorphism rs587756191_T from the datamatrix, and determine its genotype counts. Apply a chi-square test for Hardy-Weinberg equilibrium, with and without continuity correction. Also try an exact test, and a permutation test. You can use function HWChisq, HWExact and HWPerm for this purpose. Do you think this variant is in equilibrium? Argue your answer.
+```{r}
+
+
+```
+
+## 4. Determine the genotype counts for all these variants, and store them in a p × 3 matrix.
+```{r}
+
+
+```
+
+## 5. Apply a chi-square test without continuity correction for Hardy-Weinberg equilibrium to each SNP. You can use HWChisqStats for this purpose. How many SNPs are significant (use α = 0.05)?
+```{r}
+
+
+```
+
+## 6. How many markers of the remaining non-monomorphic markers would you expect to be out of equilibrium by the effect of chance alone?
+```{r}
+
+
+```
+
+## 7. Which SNP is most significant according to the chi-square test results? Give it genotype counts. In which sense is this genotypic composition unusual?
+```{r}
+
+
+```
+
+## 8. Apply an Exact test for Hardy-Weinberg equilibrium to each SNP. You can use function HWExactStats for fast computation. How many SNPs are significant (use α = 0.05). Is the result consistent with the chi-square test?
+```{r}
+
+
+```
+
+## 9. Which SNP is most significant according to the exact test results? Give its genotype counts. In which sense is this genotypic composition unusual?
+```{r}
+
+
+```
+
+## 10. Apply a likelihood ratio test for Hardy-Weinberg equilibrium to each SNP, using the HWLratio function. How many SNPs are significant (use α = 0.05). Is the result consistent with the chi-square test?
+```{r}
+
+
+```
+
+## 11. Apply a permutation test for Hardy-Weinberg equilibrium to the first 10 SNPs, using the classical chi-square test (without continuity correction) as a test statistic. List the 10 p-values, together with the 10 p-values of the exact tests. Are the results consistent?
+```{r}
+
+
+```
+
+## 12. Depict all SNPs simultaeneously in a ternary plot with function HWTernaryPlot and comment on your result (because many genotype counts repeat, you may use UniqueGenotypeCounts to speed up the computations)
+```{r}
+
+
+```
+
+## 13. Can you explain why half of the ternary diagram is empty?
+```{r}
+
+
+```
+
+## 14. Make a histogram of the p-values obtained in the chi-square test. What distribution would you expect if HWE would hold for the data set? Make a Q-Q plot of the p values obtained in the chi-square test against the quantiles of the distribution that you consider relevant. What is your conclusion?.
+```{r}
+
+
+```
+
+## 15. Imagine that for a particular marker the counts of the two homozygotes are accidentally interchanged. Would this affect the statistical tests for HWE? Try it on the computer if you want. Argue your answer.
+```{r}
+
+
+```
+
+## 16. Compute the inbreeding coefficient ( ˆ f) for each SNP, and make a histogram of ˆ f. You can use function HWf for this purpose. Give descriptive statistics (mean, standard deviation, etc) of ˆ f calculated over the set of SNPs. What distribution do you expect ˆ f to follow theoretically? Use a probability plot to confirm your idea.
+```{r}
+
+
+```
+
+## 17. Make a plot of the observed chi-square statistics against the inbreeding coefficient (f'). What doyou observe? Can you give an equation that relates the two statistics?
+```{r}
+
+
+```
+
+## 18. We reconsider the exact test for HWE, using different significant levels. Report the number and percentage of significant variants using an exac test for HWE with α = 0.10, 0.05, 0.01 and 0.001. State your conclusions.
+```{r}
+
+
+```
+
