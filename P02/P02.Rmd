@@ -44,13 +44,16 @@ cols <- which(colSums(geneticData == 1, na.rm = TRUE) > 0) # Non monomorphic (co
 variants.poly <-length(cols); variants.poly
 variants.mono <- variants-variants.poly
 perc.mono <- 100*variants.mono/variants; perc.mono
-geneticData.poly <- geneticData[, cols]
+geneticData.poly <- geneticData[, ..cols]
 
+remove(geneticData)
+
+ncol(geneticData.poly)
 ```
 
 ## 3. Extract polymorphism rs587756191_T from the datamatrix, and determine its genotype counts. Apply a chi-square test for Hardy-Weinberg equilibrium, with and without continuity correction. Also try an exact test, and a permutation test. You can use function HWChisq, HWExact and HWPerm for this purpose. Do you think this variant is in equilibrium? Argue your answer.
 ```{r}
-
+geneticData[, "rs587756191_T"]
 
 ```
 
