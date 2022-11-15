@@ -45,48 +45,73 @@ variants <- ncol(geneticData); variants;
 individuals <- nrow(geneticData); individuals;
 
 cols <- which(colSums(geneticData == 1, na.rm = TRUE) > 0) # Non monomorphic (contains AB)
-variants.poly <-length(cols); variants.poly
-variants.mono <- variants-variants.poly; variants.mono
+variants.poly <-length(cols);
+variants.mono <- variants-variants.poly;
 perc.mono <- 100*variants.mono/variants; perc.mono
 geneticData.poly <- geneticData[, ..cols]
 
 remove(geneticData)
-
-ncol(geneticData.poly)
+ 
+ncol(geneticData.poly) #208933
 
 ```
 
 ## 3. Extract polymorphism rs587756191_T from the datamatrix, and determine its genotype counts. Apply a chi-square test for Hardy-Weinberg equilibrium, with and without continuity correction. Also try an exact test, and a permutation test. You can use function HWChisq, HWExact and HWPerm for this purpose. Do you think this variant is in equilibrium? Argue your answer.
+```{r options} 
+options("scipen"=100, "digits"=3) #Default values
+```
+
 ```{r}
 
 rs587756191_T <- dplyr::recode(geneticData.poly$rs587756191_T, `0`="AA", `1`="AB", `2`="BB")
-rs587756191_T.g <- genotype(rs587756191_T, sep="")
-rs587756191_T.g.summary <- summary(rs587756191_T.g)
-rs587756191_T.g.summary$genotype.freq # genotype counts
 
+# genetics library
+rs587756191_T.g <- genotype(rs587756191_T,sep="")
+rs587756191_T.g.summary <- summary(rs587756191_T.g)
+rs587756191_T.g.summary$genotype.freq #genotype counts
+
+# HardyWeinberg library
+#x <- MakeCounts(rs587756191_T, alleles = c("A/B"))[1,1:3]; x
+x <- MakeCounts(geneticData.poly$rs587756191_T, coding = c(0,1,2))[1,1:3]
+
+results.chi <- HWChisq(x,cc=0.5) 
+
+results.chi.nocor <- HWChisq(x,cc=0)
+
+results.exact <- HWExact(x)
+
+results.perm <- HWPerm(x)
+
+```
+
+```{r options} 
+options("scipen"=0, "digits"=7) #Default values
 ```
 
 ## 4. Determine the genotype counts for all these variants, and store them in a p × 3 matrix.
 ```{r}
-
-
+genotypeCounts <- MakeCounts(geneticData.poly, coding=c(0,1,2))[,1:3]
 ```
 
 ## 5. Apply a chi-square test without continuity correction for Hardy-Weinberg equilibrium to each SNP. You can use HWChisqStats for this purpose. How many SNPs are significant (use α = 0.05)?
 ```{r}
+Chisq.pvals <- HWChisqStats(genotypeCounts,pvalues=TRUE)
 
+p <- 100 * length(which(Chisq.pvals > 0.05)) / length(Chisq.pvals);p
 
 ```
 
 ## 6. How many markers of the remaining non-monomorphic markers would you expect to be out of equilibrium by the effect of chance alone?
 ```{r}
-
+c <- 100 * (1 - (length(which(Chisq.pvals > 0.05)) / length(Chisq.pvals)));c
 
 ```
 
 ## 7. Which SNP is most significant according to the chi-square test results? Give it genotype counts. In which sense is this genotypic composition unusual?
 ```{r}
+max.ind <- which.max(Chisq.pvals)
 
+geneticData.poly[, which.max(Chisq.pvals), with=FALSE]
 
 ```
 
