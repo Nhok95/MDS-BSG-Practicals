@@ -20,6 +20,7 @@ rm(list = ls(all.names = TRUE))
 ```{r load packages, echo=FALSE, message=FALSE, warning=FALSE}
 library(genetics)
 library(dplyr)
+library(car)
 library(ggplot2)
 library(fitdistrplus)
 library(HardyWeinberg)
@@ -57,9 +58,9 @@ ncol(geneticData.poly) #208933
 ```
 
 ## 3. Extract polymorphism rs587756191_T from the datamatrix, and determine its genotype counts. Apply a chi-square test for Hardy-Weinberg equilibrium, with and without continuity correction. Also try an exact test, and a permutation test. You can use function HWChisq, HWExact and HWPerm for this purpose. Do you think this variant is in equilibrium? Argue your answer.
-```{r options} 
-options("scipen"=100, "digits"=3) #Default values
-```
+
+We consider this variant is not in equilibrium, the first signs could be seen in the warning of the HWChisq since we have occurences below 5. The p-value obtained is 
+6.495738e-25 that is lower than 0.05 so we reject the null hypothesis (observer proportions are equal to the expected counts under HWE), this entails that the variant has a different distribution as the expected by HWP.
 
 ```{r}
 
@@ -72,7 +73,7 @@ rs587756191_T.g.summary$genotype.freq #genotype counts
 
 # HardyWeinberg library
 #x <- MakeCounts(rs587756191_T, alleles = c("A/B"))[1,1:3]; x
-x <- MakeCounts(geneticData.poly$rs587756191_T, coding = c(0,1,2))[1,1:3]
+x <- MakeCounts(geneticData.poly$rs587756191_T)[1,1:3]
 
 results.chi <- HWChisq(x,cc=0.5) 
 
@@ -84,18 +85,18 @@ results.perm <- HWPerm(x)
 
 ```
 
-```{r options} 
-options("scipen"=0, "digits"=7) #Default values
-```
 
 ## 4. Determine the genotype counts for all these variants, and store them in a p × 3 matrix.
 ```{r}
-genotypeCounts <- MakeCounts(geneticData.poly, coding=c(0,1,2))[,1:3]
+alpha <- 0.05
+count_matrix <- MakeCounts(geneticData.poly)[,1:3]
 ```
 
 ## 5. Apply a chi-square test without continuity correction for Hardy-Weinberg equilibrium to each SNP. You can use HWChisqStats for this purpose. How many SNPs are significant (use α = 0.05)?
+
+96.16097% of the SNPs have a p-value over 0.05 (that entails that this SNPs have HWE). We can consider the other 3.83903% as unbalanced.
 ```{r}
-Chisq.pvals <- HWChisqStats(genotypeCounts,pvalues=TRUE)
+Chisq.pvals <- HWChisqStats(count_matrix,pvalues=TRUE)
 
 p <- 100 * length(which(Chisq.pvals > 0.05)) / length(Chisq.pvals);p
 
@@ -111,15 +112,19 @@ c <- 100 * (1 - (length(which(Chisq.pvals > 0.05)) / length(Chisq.pvals)));c
 ```{r}
 max.ind <- which.max(Chisq.pvals)
 
-geneticData.poly[, which.max(Chisq.pvals), with=FALSE]
+most.sign.SNP.chisq <- geneticData.poly[, which.max(Chisq.pvals), with=FALSE]
+names(most.sign.SNP.chisq)
+
+gen.counts <- MakeCounts(most.sign.SNP.chisq)[,1:3] # A lot of AB
+HWChisq(gen.counts, cc = 0)
+
 
 ```
 
 ## 8. Apply an Exact test for Hardy-Weinberg equilibrium to each SNP. You can use function HWExactStats for fast computation. How many SNPs are significant (use α = 0.05). Is the result consistent with the chi-square test?
 ```{r}
 
-alpha <- 0.05
-count_matrix <- MakeCounts(geneticData.poly)
+
 exact_test_pvals <- HWExactStats(count_matrix)
 sum(exact_test_pvals<=alpha)
 (sum(exact_test_pvals<=alpha) / nrow(count_matrix)) * 100
@@ -181,8 +186,10 @@ It is half empty due to the fact that the genotypes we're working with have very
 
 ## 14. Make a histogram of the p-values obtained in the chi-square test. What distribution would you expect if HWE would hold for the data set? Make a Q-Q plot of the p values obtained in the chi-square test against the quantiles of the distribution that you consider relevant. What is your conclusion?.
 ```{r}
+hist(Chisq.pvals)
 
-
+# HWQqplot(genotypeCounts) 
+qqplot(y=Chisq.pvals, x=qchisq(ppoints(500), df = 1))
 ```
 
 ## 15. Imagine that for a particular marker the counts of the two homozygotes are accidentally interchanged. Would this affect the statistical tests for HWE? Try it on the computer if you want. Argue your answer.
@@ -214,6 +221,31 @@ library(psych);psych::describe(fhat)
 ## 18. We reconsider the exact test for HWE, using different significant levels. Report the number and percentage of significant variants using an exac test for HWE with α = 0.10, 0.05, 0.01 and 0.001. State your conclusions.
 ```{r}
 
+AA = 756; SS
+AB = 200; SB
+BB = 144; BB
+total = AA + AB + BB; total
+
+p = ((2*SS) + SB)/ (2* total); p # A
+q = ((2*BB) + SB)/ (2* total); q # B
+
+p+q # should be 1
+
+AA.exp = p*p*total; AA.exp
+AB.exp = 2*p*q*total; AB.exp
+BB.exp = q*q*total; BB.exp
+
+chi = ((AA-AA.exp)^2/ AA.exp) + ((AB-AB.exp)^2/ AB.exp) + ((BB-BB.exp)^2/ BB.exp); chi
+
+df = 3-2 
+
+# p.value <<<< 0.01 -> 6.63 chi
+# p.value < 0.05 -> reject H0 -> alleles are out of equilibrium
 
 ```
 
+```{r}
+
+
+
+```
