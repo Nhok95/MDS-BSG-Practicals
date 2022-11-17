@@ -88,15 +88,18 @@ results.perm <- HWPerm(x)
 
 ## 4. Determine the genotype counts for all these variants, and store them in a p × 3 matrix.
 ```{r}
+
 alpha <- 0.05
 count_matrix <- MakeCounts(geneticData.poly)[,1:3]
+
 ```
 
 ## 5. Apply a chi-square test without continuity correction for Hardy-Weinberg equilibrium to each SNP. You can use HWChisqStats for this purpose. How many SNPs are significant (use α = 0.05)?
 
 96.16097% of the SNPs have a p-value over 0.05 (that entails that this SNPs have HWE). We can consider the other 3.83903% as unbalanced.
 ```{r}
-Chisq.pvals <- HWChisqStats(count_matrix,pvalues=TRUE)
+
+Chisq.pvals <- HWChisqStats(count_matrix, pvalues=TRUE)
 
 p <- 100 * length(which(Chisq.pvals > 0.05)) / length(Chisq.pvals);p
 
@@ -117,7 +120,6 @@ names(most.sign.SNP.chisq)
 
 gen.counts <- MakeCounts(most.sign.SNP.chisq)[,1:3] # A lot of AB
 HWChisq(gen.counts, cc = 0)
-
 
 ```
 
@@ -186,10 +188,20 @@ It is half empty due to the fact that the genotypes we're working with have very
 
 ## 14. Make a histogram of the p-values obtained in the chi-square test. What distribution would you expect if HWE would hold for the data set? Make a Q-Q plot of the p values obtained in the chi-square test against the quantiles of the distribution that you consider relevant. What is your conclusion?.
 ```{r}
-hist(Chisq.pvals)
 
-# HWQqplot(genotypeCounts) 
+hist(Chisq.pvals, c="turquoise")
+
+# if the HWE holds for the dataset, it means p-values from the chi-square test are <= 0.05 for almost all the SNPs
+
+# the reference is a chi-sq with 1 df
+
+# there are ~ 3.84% significant SNPs in the dataset
+
+# there should be a peak in the region below 0.05, and it is clearly not the case. As it can be seen
+# in the histogram, there are many p-values > 0.05
+
 qqplot(y=Chisq.pvals, x=qchisq(ppoints(500), df = 1))
+
 ```
 
 ## 15. Imagine that for a particular marker the counts of the two homozygotes are accidentally interchanged. Would this affect the statistical tests for HWE? Try it on the computer if you want. Argue your answer.
@@ -214,7 +226,8 @@ library(psych);psych::describe(fhat)
 ## 17. Make a plot of the observed chi-square statistics against the inbreeding coefficient (f'). What do you observe? Can you give an equation that relates the two statistics?
 ```{r}
 
-#  chi-sq = n * fhat^2 is the equation
+#  chi-sq = n * fhat^2 is the equation??
+plot(x=fhat, y=Chisq.pvals, main="fhat vs. chi-sq p-values")
 
 ```
 
