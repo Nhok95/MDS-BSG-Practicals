@@ -217,8 +217,11 @@ legend("topright", legend = c("Estimated density", "N(0,0.1)"), lty = c(1, 2))
 
 #  chi-sq = n * fhat^2 is the equation??
 plot(x=fhat, y=Chisq.pvals, main="fhat vs. chi-sq p-values")
+# fhat == 0 means HWE
 
 ```
+
+In the histogram it is not easy to clearly appreciate the underlying distribution, but it resembles to a normal centered in 0 with a very low variance (this always happens in a dataset where there's HWE, since fhat has value 0 for SNPs when they're under HWE). The inbreeding coefficient is related with a chi-sq by means of the formula  n * fhat^2.
 
 ## 18. We reconsider the exact test for HWE, using different significant levels. Report the number and percentage of significant variants using an exac test for HWE with α = 0.10, 0.05, 0.01 and 0.001. State your conclusions.
 ```{r, include=FALSE}
