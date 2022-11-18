@@ -193,7 +193,7 @@ We would expect a chi-sq with 1 df, and it seems it's the case (if we consider t
 
 ## 15. Imagine that for a particular marker the counts of the two homozygotes are accidentally interchanged. Would this affect the statistical tests for HWE? Try it on the computer if you want. Argue your answer.
 
-[...]
+Since the proportions under HWE for AA and BB are different, accidentally interchanging the counts would have a direct effect in the result of the statistical tests. This is quite clear in the case of the chi-square statistic proposed in the lectures' notes, due to the fact that it compares observed proportions with expected proportions. If there's an error and the observed proportions are interchanged, the computed value would be very different to the true value.
 
 ## 16. Compute the inbreeding coefficient ( ˆ f) for each SNP, and make a histogram of ˆ f. You can use function HWf for this purpose. Give descriptive statistics (mean, standard deviation, etc) of ˆ f calculated over the set of SNPs. What distribution do you expect ˆ f to follow theoretically? Use a probability plot to confirm your idea.
 ```{r}
