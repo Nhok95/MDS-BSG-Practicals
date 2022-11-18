@@ -28,8 +28,6 @@ set.seed(2209)
 
 # Hardy-Weinberg equilibrium
 
-INFO: https://cran.r-project.org/web/packages/data.table/vignettes/datatable-faq.html
-
 ```{r, include=FALSE}
 
 # load data
@@ -40,6 +38,8 @@ geneticData <- fread(filename, drop = c(1:6)) # first 6 cols are removed since t
 ```
 
 ## 2. How many individuals does the database contain, and how many variants? What percentage of the variants is monomorphic? Remove all monomorphic SNPs from the database. How many variants remain in the database?
+Database has 107 individuals and 1102156 variants of which 81.04% are monomorphic (contains only AA or AB but never AB). If we remove all the monomorphic SNPs we are left with only 208933 variants. 
+
 ```{r}
 
 variants <- ncol(geneticData); variants;
@@ -58,21 +58,27 @@ ncol(geneticData.poly) #208933
 
 ## 3. Extract polymorphism rs587756191_T from the datamatrix, and determine its genotype counts. Apply a chi-square test for Hardy-Weinberg equilibrium, with and without continuity correction. Also try an exact test, and a permutation test. You can use function HWChisq, HWExact and HWPerm for this purpose. Do you think this variant is in equilibrium? Argue your answer.
 
-We consider this variant is not in equilibrium, the first signs could be seen in the warning of the HWChisq since we have occurences below 5. The p-value obtained is 
-6.495738e-25 that is lower than 0.05 so we reject the null hypothesis (observed proportions are equal to the expected counts under HWE), this entails that the variant has not reached the HWP.
+We consider this variant to be in equilibrium due to several pieces of evidence. The p-value obtained without continuity correction is 0.96 which is almost 1, that means that the proportions are ok but a warning appears (some expected values are below 5), hence we have to apply continuity correction. The p-value obtained with chi-square (with correction) is 6.495738e-25 that is lower than 0.05 so we should reject the null hypothesis (observed proportions are equal to the expected counts under HWE), this entails that the variant has not reached the HWP. In both cases the inbreeding coefficient is quite close to 0 (the expected for HWE). 
+Additionally, the exact test p-value is 1, this means that there is no deviation with respect the theoretical HWE, we have obtained the same value for the permutation test. 
+
+To sum up, there is more evidence to conclude that the distribution follows HWE than to reject it.
 
 ```{r}
 
 rs587756191_T <- dplyr::recode(geneticData.poly$rs587756191_T, `0`="AA", `1`="AB", `2`="BB")
 
+# genetics library
 rs587756191_T.g <- genotype(rs587756191_T,sep="")
 rs587756191_T.g.summary <- summary(rs587756191_T.g)
 rs587756191_T.g.summary$genotype.freq #genotype counts
 
+# HardyWeinberg library
+#x <- MakeCounts(rs587756191_T, alleles = c("A/B"))[1,1:3]; x
 x <- MakeCounts(geneticData.poly$rs587756191_T)[1,1:3]
+
 results.chi <- HWChisq(x,cc=0.5) 
 results.chi.nocor <- HWChisq(x,cc=0)
-results.exact <- HWExact(x)
+results.exact <- HWExact(x, pvaluetype = "selome")
 results.perm <- HWPerm(x)
 
 ```
@@ -87,33 +93,38 @@ count_matrix <- MakeCounts(geneticData.poly)[,1:3]
 
 ## 5. Apply a chi-square test without continuity correction for Hardy-Weinberg equilibrium to each SNP. You can use HWChisqStats for this purpose. How many SNPs are significant (use α = 0.05)?
 
-96.16097% of the SNPs have a p-value over 0.05 (that entails that these SNPs have HWE). We can consider the other 3.83903% as imbalanced.
+96.16097% of the SNPs have a p-value over 0.05 (that entails that these SNPs have HWE). Significant SNPs (those whose p-value is under alpha) are 8021 that represents the 3.83903% of the SNPs.
 ```{r}
 
 Chisq.pvals <- HWChisqStats(count_matrix, pvalues=TRUE)
-p <- 100 * length(which(Chisq.pvals > 0.05)) / length(Chisq.pvals);p
+sign.SNPs <- length(which(Chisq.pvals < alpha)); sign.SNPs
+p <- 100 * sign.SNPs / length(Chisq.pvals);p
 
 ```
 
 ## 6. How many markers of the remaining non-monomorphic markers would you expect to be out of equilibrium by the effect of chance alone?
+We can consider the significant SNPs (the 3.83903%) as imbalanced.
 ```{r}
-
-c <- 100 * (1 - (length(which(Chisq.pvals > 0.05)) / length(Chisq.pvals)));c
+p
 
 ```
 
 ## 7. Which SNP is most significant according to the chi-square test results? Give it genotype counts. In which sense is this genotypic composition unusual?
-```{r}
-max.ind <- which.max(Chisq.pvals)
 
-most.sign.SNP.chisq <- geneticData.poly[, which.max(Chisq.pvals), with=FALSE]
+The most significant SNP is the one with the minimum p-value from chi-square test. In our case is "rs62654774_G" (index 111993). The composition of the genotype is unusual in the sense that this variation contains only heterozygotes, which is quite strange as the values we expect are 26.75 for both AA and BB and 53.5 for AB. We can notice that D (deviation from HWE for the AB) is very high (26.75) and the imbreeding coefficient is -1 (0 under HWE). The p-value is almost 0, so it is clear that we must reject the H0 and say that this composition does not follows the HWE.
+
+```{r}
+min.ind <- which.min(Chisq.pvals); min.ind
+
+most.sign.SNP.chisq <- geneticData.poly[, which.min(Chisq.pvals), with=FALSE]
 names(most.sign.SNP.chisq)
 
 gen.counts <- MakeCounts(most.sign.SNP.chisq)[,1:3];gen.counts
 
-```
+sign.chisq <- HWChisq(gen.counts,cc=0)
+sign.chisq$expected
 
-The composition of the genotype is unusual in the sense that it contains a very high number of AB in comparison to AA or BB (very high number of heterozygotes).
+```
 
 ## 8. Apply an Exact test for Hardy-Weinberg equilibrium to each SNP. You can use function HWExactStats for fast computation. How many SNPs are significant (use α = 0.05). Is the result consistent with the chi-square test?
 ```{r}
@@ -127,12 +138,12 @@ sum(exact_test_pvals<=alpha) # num. significant SNPs
 ## 9. Which SNP is most significant according to the exact test results? Give its genotype counts. In which sense is this genotypic composition unusual?
 ```{r}
 
-most_significant_SNP <- which.min(exact_test_pvals)
+most_significant_SNP <- which.min(exact_test_pvals); most_significant_SNP
 count_matrix[most_significant_SNP,][1:3]
 
 ```
 
-The composition of the genotype is unusual in the sense that it contains a very high number of AB (heterozygotes), and no AA or BB.
+The composition of the genotype is unusual in the sense that it contains a very high number of AB (heterozygotes), and no AA or BB. We can realize that is the same variant we have seen in question 7.
 
 ## 10. Apply a likelihood ratio test for Hardy-Weinberg equilibrium to each SNP, using the HWLratio function. How many SNPs are significant (use α = 0.05). Is the result consistent with the chi-square test?
 ```{r}
@@ -224,27 +235,30 @@ plot(x=fhat, y=Chisq.pvals, main="fhat vs. chi-sq p-values")
 In the histogram it is not easy to clearly appreciate the underlying distribution, but it resembles to a normal centered in 0 with a very low variance (this always happens in a dataset where there's HWE, since fhat has value 0 for SNPs when they're under HWE). The inbreeding coefficient is related with a chi-sq by means of the formula  n * fhat^2.
 
 ## 18. We reconsider the exact test for HWE, using different significant levels. Report the number and percentage of significant variants using an exac test for HWE with α = 0.10, 0.05, 0.01 and 0.001. State your conclusions.
-```{r, include=FALSE}
+```{r, out.width = "80%", fig.align="center"}
 
-# AA = 756; SS
-# AB = 200; SB
-# BB = 144; BB
-# total = AA + AB + BB; total
-# 
-# p = ((2*SS) + SB)/ (2* total); p # A
-# q = ((2*BB) + SB)/ (2* total); q # B
-# 
-# p+q # should be 1
-# 
-# AA.exp = p*p*total; AA.exp
-# AB.exp = 2*p*q*total; AB.exp
-# BB.exp = q*q*total; BB.exp
-# 
-# chi = ((AA-AA.exp)^2/ AA.exp) + ((AB-AB.exp)^2/ AB.exp) + ((BB-BB.exp)^2/ BB.exp); chi
-# 
-# df = 3-2 
+sign.SNPs.100 <- length(which(exact_test_pvals < 0.1))
+p.100 <- 100 * sign.SNPs.100 / length(Chisq.pvals)
 
-# p.value <<<< 0.01 -> 6.63 chi
-# p.value < 0.05 -> reject H0 -> alleles are out of equilibrium
+sign.SNPs.050 <- length(which(exact_test_pvals < 0.05))
+p.050 <- 100 * sign.SNPs.050 / length(Chisq.pvals)
+
+sign.SNPs.010 <- length(which(exact_test_pvals < 0.01))
+p.010 <- 100 * sign.SNPs.010 / length(Chisq.pvals)
+
+sign.SNPs.001 <- length(which(exact_test_pvals < 0.001))
+p.001 <- 100 * sign.SNPs.001 / length(Chisq.pvals)
+
+sign.SNPs.100; p.100 
+sign.SNPs.050; p.050 
+sign.SNPs.010; p.010 
+sign.SNPs.001; p.001 
+
+number.variants = c(sign.SNPs.100,sign.SNPs.050,sign.SNPs.010,sign.SNPs.001)
+alpha.values = c(100,50,10,1)
+
+plot(x=number.variants, y=alpha.values)
 
 ```
+
+If we have a look of the last plot we can see a the number of variants is equivalent to the threshold we have used, in other words, it appears to be that the variants are distributed in a uniform way (at least for those with p.values below 0.1)
