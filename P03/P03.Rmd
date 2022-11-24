@@ -1,5 +1,5 @@
 ---
-title: 'Practical 02 SG: Hardy-Weinberg equilibrium'
+title: 'Practical 03 SG: LD and Haplotype estimation'
 author: "Carlos Moyano & Kleber Reyes"
 date: "`r Sys.Date()`"
 output:
@@ -15,250 +15,159 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 rm(list = ls(all.names = TRUE))
+
 ```
+
 
 ```{r load packages, echo=FALSE, message=FALSE, warning=FALSE}
+library(rstudioapi)
 library(genetics)
-library(dplyr)
 library(HardyWeinberg)
-library(data.table)
-library(psych)
+library(LDheatmap)
+library(haplo.stats)
 set.seed(2209)
+current_path <- getActiveDocumentContext()$path 
+setwd(dirname(current_path)) 
 ```
 
-# Hardy-Weinberg equilibrium
+# Linkage Disequilibrium
 
-```{r, include=FALSE}
+files: https://www.cog-genomics.org/plink/1.9/formats#bim
 
+## 2. Load the FOXP2.dat file into the R environment. How many individuals and how many SNPs are there in the database? What percentage of the data is missing?
+
+```{r}
 # load data
-# "http://www-eio.upc.es/~jan/data/bsg/TSIChr22v4.raw"
-filename <- "TSIChr22v4.raw"
-geneticData <- fread(filename, drop = c(1:6)) # first 6 cols are removed since they're not useful
-
+genotypeData <- read.table("FOXP2/FOXP2.dat", header = TRUE)
+genotypeData <- genotypeData[, 2: ncol(genotypeData)]
 ```
 
-## 2. How many individuals does the database contain, and how many variants? What percentage of the variants is monomorphic? Remove all monomorphic SNPs from the database. How many variants remain in the database?
-Database has 107 individuals and 1102156 variants of which 81.04% are monomorphic (contains only AA or AB but never AB). If we remove all the monomorphic SNPs we are left with only 208933 variants. 
+
+## 3. Determine the genotype counts for each SNP, and depict all SNPs simultaeneously in a ternary plot, and comment on your result. For how many variants do you reject Hardy-Weinberg equilibrium using an ordinary chi-square test without continuity correction? (hint: you can read the .bim in R in order to determine the alleles of each SNP, and use function MakeCounts from the HardyWeinberg package to create a matrix of genotype counts). ‘
+
+```{r}
+# load data
+variantsColnames <- c("chromosome", "SNP id", "position", "basepair coordinate", "Allele 1", "Allele 2")
+variantsData <- read.table("FOXP2/FOXP2.bim", header = FALSE, col.names = variantsColnames)
+```
+
+## 4. Using the function LD from the genetics package, compute the LD statistic D for the SNPs rs34684677 and rs2894715 of the database. Is there significant association between the alleles of these two SNPs? 
 
 ```{r}
 
-variants <- ncol(geneticData); variants;
-individuals <- nrow(geneticData); individuals;
-
-cols <- which(colSums(geneticData == 1, na.rm = TRUE) > 0) # Non monomorphic (contains AB)
-variants.poly <-length(cols);
-variants.mono <- variants-variants.poly;
-perc.mono <- 100*variants.mono/variants; perc.mono
-geneticData.poly <- geneticData[, ..cols]
-
-remove(geneticData)
-ncol(geneticData.poly) #208933
 
 ```
 
-## 3. Extract polymorphism rs587756191_T from the datamatrix, and determine its genotype counts. Apply a chi-square test for Hardy-Weinberg equilibrium, with and without continuity correction. Also try an exact test, and a permutation test. You can use function HWChisq, HWExact and HWPerm for this purpose. Do you think this variant is in equilibrium? Argue your answer.
-
-We consider this variant to be in equilibrium due to several pieces of evidence. The p-value obtained without continuity correction is 0.96 which is almost 1, that means that the proportions are ok but a warning appears (some expected values are below 5), hence we have to apply continuity correction. The p-value obtained with chi-square (with correction) is 6.495738e-25 that is lower than 0.05 so we should reject the null hypothesis (observed proportions are equal to the expected counts under HWE), this entails that the variant has not reached the HWP. In both cases the inbreeding coefficient is quite close to 0 (the expected for HWE). 
-Additionally, the exact test p-value is 1, this means that there is no deviation with respect the theoretical HWE, we have obtained the same value for the permutation test. 
-
-To sum up, there is more evidence to conclude that the distribution follows HWE than to reject it.
+## 5. Also compute the LD statistic D for the SNPs rs34684677 and rs998302 of the database. Is there significant association between these two SNPs? Is there any reason why rs998302 could have stronger or weaker correlation than rs2894715?
 
 ```{r}
 
-rs587756191_T <- dplyr::recode(geneticData.poly$rs587756191_T, `0`="AA", `1`="AB", `2`="BB")
-
-# genetics library
-rs587756191_T.g <- genotype(rs587756191_T,sep="")
-rs587756191_T.g.summary <- summary(rs587756191_T.g)
-rs587756191_T.g.summary$genotype.freq #genotype counts
-
-# HardyWeinberg library
-#x <- MakeCounts(rs587756191_T, alleles = c("A/B"))[1,1:3]; x
-x <- MakeCounts(geneticData.poly$rs587756191_T)[1,1:3]
-
-results.chi <- HWChisq(x,cc=0.5) 
-results.chi.nocor <- HWChisq(x,cc=0)
-results.exact <- HWExact(x, pvaluetype = "selome")
-results.perm <- HWPerm(x)
 
 ```
 
-## 4. Determine the genotype counts for all these variants, and store them in a p × 3 matrix.
+## 6. Given your previous estimate of D for SNPs rs34684677 and rs2894715, infer the haplotype frequencies. Which haplotype is the most common?
+
 ```{r}
 
-alpha <- 0.05
-count_matrix <- MakeCounts(geneticData.poly)[,1:3]
 
 ```
 
-## 5. Apply a chi-square test without continuity correction for Hardy-Weinberg equilibrium to each SNP. You can use HWChisqStats for this purpose. How many SNPs are significant (use α = 0.05)?
+## 7. Compute the LD statistics R2 for all the marker pairs in this data base, using the LD function of the packages genetics. Be prepared that this make take a few minutes. Also compute an alternative estimate of R2 obtained by using the PLINK program.
 
-96.16097% of the SNPs have a p-value over 0.05 (that entails that these SNPs have HWE). Significant SNPs (those whose p-value is under alpha) are 8021 that represents the 3.83903% of the SNPs.
+For this purpose you should:
+* Download and install PLINK 1.90 from https://www.cog-genomics.org/plink2/
+* Take care to store the files FOXP2.bim, FOXP2.fam and FOXP2.bed in a directory where PLINK can find them.
+* Compute LD estimates with PLINK using plink --bfile FOXP2 --r2 --matrix --out FOXP2 This creates a file with extension FOXP2.ld that contains a matrix with all R2 statistics. Read this file into the R environment. Make a scatter plot for R’s LD estimates against PLINK’s LD estimates. Are they identical or do they at least correlate? What’s the difference between these two estimators? Which estimator would your prefer and why?
+
+
 ```{r}
 
-Chisq.pvals <- HWChisqStats(count_matrix, pvalues=TRUE)
-sign.SNPs <- length(which(Chisq.pvals < alpha)); sign.SNPs
-p <- 100 * sign.SNPs / length(Chisq.pvals);p
 
 ```
 
-## 6. How many markers of the remaining non-monomorphic markers would you expect to be out of equilibrium by the effect of chance alone?
-We can consider the significant SNPs (the 3.83903%) as imbalanced.
-```{r}
-p
-
-```
-
-## 7. Which SNP is most significant according to the chi-square test results? Give it genotype counts. In which sense is this genotypic composition unusual?
-
-The most significant SNP is the one with the minimum p-value from chi-square test. In our case is "rs62654774_G" (index 111993). The composition of the genotype is unusual in the sense that this variation contains only heterozygotes, which is quite strange as the values we expect are 26.75 for both AA and BB and 53.5 for AB. We can notice that D (deviation from HWE for the AB) is very high (26.75) and the imbreeding coefficient is -1 (0 under HWE). The p-value is almost 0, so it is clear that we must reject the H0 and say that this composition does not follows the HWE.
+## 8. Compute a distance matrix with the distance in base pairs between all possible pairs of SNPs, using the basepair position of each SNP given in the .bim file. Make a plot of R’s R2 statistics against the distance (expressed as the number of basepairs) between the markers. Comment on your results.
 
 ```{r}
-min.ind <- which.min(Chisq.pvals); min.ind
 
-most.sign.SNP.chisq <- geneticData.poly[, which.min(Chisq.pvals), with=FALSE]
-names(most.sign.SNP.chisq)
-
-gen.counts <- MakeCounts(most.sign.SNP.chisq)[,1:3];gen.counts
-
-sign.chisq <- HWChisq(gen.counts,cc=0)
-sign.chisq$expected
 
 ```
 
-## 8. Apply an Exact test for Hardy-Weinberg equilibrium to each SNP. You can use function HWExactStats for fast computation. How many SNPs are significant (use α = 0.05). Is the result consistent with the chi-square test?
+## 9. Make an LD heatmap of the markers in this database, using the R2 statistic with the LD function. Make another heatmap obtained by filtering out all variants with a MAF below 0.35, and redoing the computations to obtain the R2 statistics in R. Can you explain any differences observed between the two heatmaps?
+
 ```{r}
 
-exact_test_pvals <- HWExactStats(count_matrix)
-sum(exact_test_pvals<=alpha) # num. significant SNPs
-(sum(exact_test_pvals<=alpha) / nrow(count_matrix)) * 100 # %
 
 ```
 
-## 9. Which SNP is most significant according to the exact test results? Give its genotype counts. In which sense is this genotypic composition unusual?
+## 10. Can you distinguish blocks of correlated markers in the area of the FOXP2 gene? How many blocks do you think that at least seem to exist?
+
 ```{r}
 
-most_significant_SNP <- which.min(exact_test_pvals); most_significant_SNP
-count_matrix[most_significant_SNP,][1:3]
 
 ```
 
-The composition of the genotype is unusual in the sense that it contains a very high number of AB (heterozygotes), and no AA or BB. We can realize that is the same variant we have seen in question 7.
+## 11. Simulate independent SNPs under the assumption of Hardy-Weinberg equilibrium, using R’s sample instruction sample(c("AA","AB","BB"),n,replace=TRUE,prob=c(p\*p,2\*p\*q,q\*q))). Simulate as many SNPs as you have in your database, and take care to match each SNP in your database with a simulated SNP that has the same sample size and allele frequency. Make an LD heatmap of the simulated SNPs, using R2 as your statistic. Compare the results with the LD heatmap of the FOXP2 region. What do you observe? State your conclusions.
 
-## 10. Apply a likelihood ratio test for Hardy-Weinberg equilibrium to each SNP, using the HWLratio function. How many SNPs are significant (use α = 0.05). Is the result consistent with the chi-square test?
 ```{r}
 
-m <- ncol(geneticData.poly)
-likelihood_ratio_test_pvals <- 0*m
-for (i in 1:m) {
-  likelihood_ratio_test_pvals[i] <- HWLratio(count_matrix[i,], verbose=FALSE)$pval
-}
-alpha <- 0.05
-sum(likelihood_ratio_test_pvals<=alpha) # num. significant SNPs
-(sum(likelihood_ratio_test_pvals<=alpha) / nrow(count_matrix)) * 100 # %
 
 ```
 
-The percentage of SNPs in equilibrium is higher than with the chi-square test, so there exists some discrepancy.
+# Haplotype estimation
 
-## 11. Apply a permutation test for Hardy-Weinberg equilibrium to the first 10 SNPs, using the classical chi-square test (without continuity correction) as a test statistic. List the 10 p-values, together with the 10 p-values of the exact tests. Are the results consistent?
+## 1. 
+
+```{r}
+haploData <- read.table("APOE.dat", header = TRUE)
+haploData <- haploData[, 2: ncol(haploData)]
+
+```
+
+## 2. 
+
 ```{r}
 
-m <- 10
-perm_test_pvals <- 0*m
-count_matrix_10_first <- MakeCounts(geneticData.poly[,1:m])[,1:3]
-for (i in 1:nrow(count_matrix_10_first)) {
-  perm_test_pvals[i] <- HWPerm(count_matrix_10_first[i,], verbose=FALSE)$pval
-}
-perm_test_pvals
-exact_test_pvals[1:10]
-sum(perm_test_pvals<=0.05)==sum(exact_test_pvals[1:10]<=0.05)
 
 ```
 
-Although the p-values vary a little bit, the results are consistent, since the same SNPs are marked as significant by both tests.
+## 3. 
 
-## 12. Depict all SNPs simultaeneously in a ternary plot with function HWTernaryPlot and comment on your result (because many genotype counts repeat, you may use UniqueGenotypeCounts to speed up the computations)
-```{r, out.width = "80%", fig.align="center"}
-
-unique_genotypes_count <- UniqueGenotypeCounts(count_matrix)[,1:3]
-HWTernaryPlot(unique_genotypes_count)
-
-```
-
-When all the SNPs are shown simultaneously in a ternary plot, the area which represents the acceptance region is much more dense in terms of SNPs projected there that the rejection area. This means that, although there are many SNPs that could be considered as not in HWE equilibrium, we have a great amount of SNPs that are in HWE equilibrium (depicted in green).
-
-## 13. Can you explain why half of the ternary diagram is empty?
-
-It is half empty due to the fact that the genotypes we're working with have very few counts of 'BB'. 
-
-## 14. Make a histogram of the p-values obtained in the chi-square test. What distribution would you expect if HWE would hold for the data set? Make a Q-Q plot of the p values obtained in the chi-square test against the quantiles of the distribution that you consider relevant. What is your conclusion?.
-```{r, echo=FALSE, out.width = "80%", fig.align="center"}
-
-hist(Chisq.pvals, c="turquoise")
-qqplot(y=Chisq.pvals, x=qchisq(ppoints(500), df = 1))
-
-```
-
-We would expect a chi-sq with 1 df, and it seems it's the case (if we consider that the distribution is flipped and the peak is in the region close to 1). The conclusion, observing the histogram and the Q-Q plot is that the HWE holds for the dataset.
-
-## 15. Imagine that for a particular marker the counts of the two homozygotes are accidentally interchanged. Would this affect the statistical tests for HWE? Try it on the computer if you want. Argue your answer.
-
-Since the proportions under HWE for AA and BB are different, accidentally interchanging the counts would have a direct effect in the result of the statistical tests. This is quite clear in the case of the chi-square statistic proposed in the lectures' notes, due to the fact that it compares observed proportions with expected proportions. If there's an error and the observed proportions are interchanged, the computed value would be very different to the true value.
-
-## 16. Compute the inbreeding coefficient ( ˆ f) for each SNP, and make a histogram of ˆ f. You can use function HWf for this purpose. Give descriptive statistics (mean, standard deviation, etc) of ˆ f calculated over the set of SNPs. What distribution do you expect ˆ f to follow theoretically? Use a probability plot to confirm your idea.
 ```{r}
 
-fhat <- HWf(count_matrix)
-psych::describe(fhat)
 
 ```
 
-```{r, echo=FALSE, out.width = "80%", fig.align="center"}
+## 4. 
 
-hist(fhat, breaks=seq(-1, 1, 0.25), xaxp=c(-1,1,8), c="turquoise", xlim=c(-1, 1), ylim=c(0, 4), prob=TRUE)
-lines(density(fhat, bw=0.1), xlim=c(-1, 1), lt=2)
-curve(dnorm(x, 0, 0.1), from=-1, to=1, add=TRUE) # quite similar to a dnorm
-legend("topright", legend = c("Estimated density", "N(0,0.1)"), lty = c(1, 2))
+```{r}
+
 
 ```
 
-## 17. Make a plot of the observed chi-square statistics against the inbreeding coefficient (f'). What do you observe? Can you give an equation that relates the two statistics?
-```{r, echo=FALSE, out.width = "80%", fig.align="center"}
+## 5. 
 
-#  chi-sq = n * fhat^2 is the equation??
-plot(x=fhat, y=Chisq.pvals, main="fhat vs. chi-sq p-values")
-# fhat == 0 means HWE
+```{r}
+
 
 ```
 
-In the histogram it is not easy to clearly appreciate the underlying distribution, but it resembles to a normal centered in 0 with a very low variance (this always happens in a dataset where there's HWE, since fhat has value 0 for SNPs when they're under HWE). The inbreeding coefficient is related with a chi-sq by means of the formula  n * fhat^2.
+## 6. 
 
-## 18. We reconsider the exact test for HWE, using different significant levels. Report the number and percentage of significant variants using an exac test for HWE with α = 0.10, 0.05, 0.01 and 0.001. State your conclusions.
-```{r, out.width = "80%", fig.align="center"}
+```{r}
 
-sign.SNPs.100 <- length(which(exact_test_pvals < 0.1))
-p.100 <- 100 * sign.SNPs.100 / length(Chisq.pvals)
-
-sign.SNPs.050 <- length(which(exact_test_pvals < 0.05))
-p.050 <- 100 * sign.SNPs.050 / length(Chisq.pvals)
-
-sign.SNPs.010 <- length(which(exact_test_pvals < 0.01))
-p.010 <- 100 * sign.SNPs.010 / length(Chisq.pvals)
-
-sign.SNPs.001 <- length(which(exact_test_pvals < 0.001))
-p.001 <- 100 * sign.SNPs.001 / length(Chisq.pvals)
-
-sign.SNPs.100; p.100 
-sign.SNPs.050; p.050 
-sign.SNPs.010; p.010 
-sign.SNPs.001; p.001 
-
-number.variants = c(sign.SNPs.100,sign.SNPs.050,sign.SNPs.010,sign.SNPs.001)
-alpha.values = c(100,50,10,1)
-
-plot(x=number.variants, y=alpha.values)
 
 ```
 
-If we have a look of the last plot we can see a the number of variants is equivalent to the threshold we have used, in other words, it appears to be that the variants are distributed in a uniform way (at least for those with p.values below 0.1)
+## 7. 
+
+```{r}
+
+
+```
+
+## 8. 
+
+```{r}
+
+
+```
