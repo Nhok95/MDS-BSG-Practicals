@@ -68,14 +68,33 @@ genotype.counts <- MakeCounts(genotypeData, alleles.SNP, sep="/")[,1:3]
 HWTernaryPlot(genotype.counts)
 ```
 
+It seems that the majority of the SNPs follows the HWE
 
+```{r}
+
+chisq.pvalues <- HWChisqStats(genotype.counts, pvalues = TRUE)
+
+sum(chisq.pvalues < 0.05)
+
+```
+
+There are 33 SNPs whose p-values is below the 0.05 threshold. We cannot say statistically that these variants follows the HWE.
 
 ## 4. Using the function LD from the genetics package, compute the LD statistic D for the SNPs rs34684677 and rs2894715 of the database. Is there significant association between the alleles of these two SNPs? 
 
 ```{r}
 
+rs34684677 <- genotypeData[, "rs34684677"]
+rs2894715 <- genotypeData[, "rs2894715"]
+
+rs34684677.g <- genotype(rs34684677,sep="/")
+rs2894715.g <- genotype(rs2894715,sep="/")
+
+LD(rs34684677.g,rs2894715.g)
 
 ```
+
+We can 
 
 ## 5. Also compute the LD statistic D for the SNPs rs34684677 and rs998302 of the database. Is there significant association between these two SNPs? Is there any reason why rs998302 could have stronger or weaker correlation than rs2894715?
 
