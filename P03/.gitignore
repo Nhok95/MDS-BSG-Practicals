@@ -1,3 +1,13 @@
 /FOXP2
 /APOE
 /plink_win64_20220402
+FOXP2.bim
+FOXP2.dat
+FOXP2.fam
+FOXP2.bed
+FOXP2.ld
+FOXP2.nosex
+FOXP2.log
+plink.exe
+prettify.exe
+.Rhistory

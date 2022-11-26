@@ -25,6 +25,8 @@ library(genetics)
 library(HardyWeinberg)
 library(LDheatmap)
 library(haplo.stats)
+library(stringr)
+library(dplyr)
 set.seed(2209)
 current_path <- getActiveDocumentContext()$path 
 setwd(dirname(current_path)) 
@@ -38,7 +40,7 @@ files: https://www.cog-genomics.org/plink/1.9/formats#bim
 
 ```{r}
 # load data
-genotypeData <- read.table("FOXP2/FOXP2.dat", header = TRUE)
+genotypeData <- read.table("FOXP2.dat", header = TRUE)
 genotypeData <- genotypeData[, 2: ncol(genotypeData)]
 ```
 
@@ -57,7 +59,7 @@ We have 104 individuals and 543 SNPs (variants) in the dataset. No missing data.
 ```{r}
 # load data
 variantsColnames <- c("chromosome", "SNP id", "position", "basepair coordinate", "Allele 1", "Allele 2")
-variantsData <- read.table("FOXP2/FOXP2.bim", header = FALSE, col.names = variantsColnames)
+variantsData <- read.table("FOXP2.bim", header = FALSE, col.names = variantsColnames)
 ```
 
 ```{r}
@@ -100,22 +102,33 @@ We can notice that the estimated D is negative (-0.055), then we are on the repu
 
 ```{r}
 
-rs34684677 <- genotypeData[, "rs34684677"]
-rs998302 <- genotypeData[, "rs998302"]
+rs34684677 <- genotypeData[,"rs34684677"]
+rs998302 <- genotypeData[,"rs998302"]
 
-rs34684677.g <- genotype(rs34684677,sep="/")
-rs998302.g <- genotype(rs998302,sep="/")
+rs34684677.g <- genotype(rs34684677, sep="/")
+rs998302.g <- genotype(rs998302, sep="/")
 
 LD(rs34684677.g,rs998302.g)
 
+# rs2894715 and rs34684677
+rs2894715 <- genotypeData[,"rs2894715"]
+rs2894715.g <- genotype(rs2894715, sep="/")
+
+LD(rs34684677.g,rs2894715.g)
+
 ```
 
-In this case p-value > 0.05, therefore, we cannot reject the null hypothesis and we have to say that D, D' and correlation are 0.
+In the case rs34684677 and rs998302,  p-value is > 0.05, therefore, we cannot reject the null hypothesis and we have to say that the D, D' and correlation estimates are not valid (not significantly different to 0).
+
+In the case rs34684677 and rs2894715, p-value is << 0.5, meaning that we can reject the null hypothesis and take into account the estimated values of D, D' and correlation since they are significantly different to 0.
+
+D´ is very close to 1, so there's a high LD.
 
 ## 6. Given your previous estimate of D for SNPs rs34684677 and rs2894715, infer the haplotype frequencies. Which haplotype is the most common?
 
 ```{r}
 
+## ??? EM algorithm??
 
 ```
 
@@ -124,39 +137,72 @@ In this case p-value > 0.05, therefore, we cannot reject the null hypothesis and
 For this purpose you should:
 * Download and install PLINK 1.90 from https://www.cog-genomics.org/plink2/
 * Take care to store the files FOXP2.bim, FOXP2.fam and FOXP2.bed in a directory where PLINK can find them.
-* Compute LD estimates with PLINK using plink --bfile FOXP2 --r2 --matrix --out FOXP2 This creates a file with extension FOXP2.ld that contains a matrix with all R2 statistics. Read this file into the R environment. Make a scatter plot for R’s LD estimates against PLINK’s LD estimates. Are they identical or do they at least correlate? What’s the difference between these two estimators? Which estimator would your prefer and why?
+* Compute LD estimates with PLINK using plink --bfile FOXP2 --r2 --matrix --out FOXP2.ld. This creates a file with extension FOXP2.ld that contains a matrix with all R2 statistics. Read this file into the R environment. Make a scatter plot for R’s LD estimates against PLINK’s LD estimates. Are they identical or do they at least correlate? What’s the difference between these two estimators? Which estimator would your prefer and why?
 
+
+```{r include=FALSE}
+
+# R_estimates <- LD(makeGenotypes(genotypeData))
+# R_estimates <- R_estimates$`R^2`
+# plinkstring01 <- "plink --bfile FOXP2 --r2 --matrix --out FOXP2"
+# system(plinkstring01)
+# PLINK_estimates <- read.table("FOXP2.ld", header = TRUE)
+# write.table(R_estimates, file="R_estimates_q_7.Rdata")
+# write.table(PLINK_estimates, file="PLINK_estimates_q_7.Rdata")
+
+```
 
 ```{r}
 
+R_estimates_q_7 <- read.table("R_estimates_q_7.Rdata")
+PLINK_estimates_q_7 <- read.table("PLINK_estimates_q_7.Rdata")
+R_estimates_q_7 <- R_estimates_q_7[2:dim(R_estimates_q_7)[1],]
+R_estimates_q_7 <- as.vector(t(replace(R_estimates_q_7, is.na(R_estimates_q_7), 0)))
+PLINK_estimates_q_7 <- as.vector(t(replace(PLINK_estimates_q_7, is.na(PLINK_estimates_q_7), 0)))
+# plot(R_estimates_q_7, PLINK_estimates_q_7)
 
 ```
+
+The scatter plot of both estimates (R vs. PLINK) shows that there's a correlation between them. However, we have noticed that there are case where the PLINK estimate is 1 and the R estimate is 0, this is probably due to the fact that we have imputed the NAs as 0s, but still interesting because this means that in some cases R fails calculating the R2 and PLINK does not, so this later would be preferred.
 
 ## 8. Compute a distance matrix with the distance in base pairs between all possible pairs of SNPs, using the basepair position of each SNP given in the .bim file. Make a plot of R’s R2 statistics against the distance (expressed as the number of basepairs) between the markers. Comment on your results.
 
 ```{r}
 
+basepair_pos_df <- read.table("FOXP2.bim")
+rownames(basepair_pos_df) <- basepair_pos_df$V2
+basepair_pos_df <- basepair_pos_df %>% dplyr::select(V4)
+basepair_dist_df <- as.matrix(dist(basepair_pos_df, method = "manhattan"))
+diag(basepair_dist_df) <- NA # we have the elements of the diagonal in the matrix
+basepair_dist <- as.vector(basepair_dist_df)
+basepair_dist <- basepair_dist[!is.na(basepair_dist)]
+# plot(R_estimates_q_7, basepair_dist)
 
 ```
+
+In the resulting plot we can observe that SNPs which are very distant from each other are generally not highly correlated, except in some very rare cases that could be considered outliers.
 
 ## 9. Make an LD heatmap of the markers in this database, using the R2 statistic with the LD function. Make another heatmap obtained by filtering out all variants with a MAF below 0.35, and redoing the computations to obtain the R2 statistics in R. Can you explain any differences observed between the two heatmaps?
 
 ```{r}
 
+# Do not uncomment, execution takes a lot!! Output images have been stored in the repo
+
+rgb.palette <- colorRampPalette(rev(c("blue", "orange", "red")), space = "rgb")
+
+# LDheatmap(makeGenotypes(genotypeData), LDmeasure="r", color=rgb.palette(18)) # r stands for R2
+maf_mask <- maf(genotype.counts) < 0.35
+# LDheatmap(makeGenotypes(genotypeData[,maf_mask]), LDmeasure="r", color=rgb.palette(18)) # r stands for R2
 
 ```
 
 ## 10. Can you distinguish blocks of correlated markers in the area of the FOXP2 gene? How many blocks do you think that at least seem to exist?
 
-```{r}
-
-
-```
+[...observe the plots from 9...]
 
 ## 11. Simulate independent SNPs under the assumption of Hardy-Weinberg equilibrium, using R’s sample instruction sample(c("AA","AB","BB"),n,replace=TRUE,prob=c(p\*p,2\*p\*q,q\*q))). Simulate as many SNPs as you have in your database, and take care to match each SNP in your database with a simulated SNP that has the same sample size and allele frequency. Make an LD heatmap of the simulated SNPs, using R2 as your statistic. Compare the results with the LD heatmap of the FOXP2 region. What do you observe? State your conclusions.
 
 ```{r}
-
 
 ```
 
@@ -165,6 +211,7 @@ For this purpose you should:
 ## 1. 
 
 ```{r}
+
 haploData <- read.table("APOE/APOE.dat", header = TRUE)
 haploData <- haploData[, 2: ncol(haploData)]
 
