@@ -43,6 +43,15 @@ genotypeData <- genotypeData[, 2: ncol(genotypeData)]
 ```
 
 
+```{r}
+individuals <- nrow(genotypeData); individuals
+SNPs <- ncol(genotypeData); SNPs 
+
+perc.mis <- 100*sum(is.na(genotypeData))/(SNPs*individuals); perc.mis
+```
+
+We have 104 individuals and 543 SNPs (variants) in the dataset. No missing data.
+
 ## 3. Determine the genotype counts for each SNP, and depict all SNPs simultaeneously in a ternary plot, and comment on your result. For how many variants do you reject Hardy-Weinberg equilibrium using an ordinary chi-square test without continuity correction? (hint: you can read the .bim in R in order to determine the alleles of each SNP, and use function MakeCounts from the HardyWeinberg package to create a matrix of genotype counts). ‘
 
 ```{r}
@@ -50,6 +59,16 @@ genotypeData <- genotypeData[, 2: ncol(genotypeData)]
 variantsColnames <- c("chromosome", "SNP id", "position", "basepair coordinate", "Allele 1", "Allele 2")
 variantsData <- read.table("FOXP2/FOXP2.bim", header = FALSE, col.names = variantsColnames)
 ```
+
+```{r}
+alleles.SNP <- paste(variantsData[,"Allele.1"], variantsData[,"Allele.2"], sep="/")
+
+genotype.counts <- MakeCounts(genotypeData, alleles.SNP, sep="/")[,1:3]
+
+HWTernaryPlot(genotype.counts)
+```
+
+
 
 ## 4. Using the function LD from the genetics package, compute the LD statistic D for the SNPs rs34684677 and rs2894715 of the database. Is there significant association between the alleles of these two SNPs? 
 
@@ -118,7 +137,7 @@ For this purpose you should:
 ## 1. 
 
 ```{r}
-haploData <- read.table("APOE.dat", header = TRUE)
+haploData <- read.table("APOE/APOE.dat", header = TRUE)
 haploData <- haploData[, 2: ncol(haploData)]
 
 ```
