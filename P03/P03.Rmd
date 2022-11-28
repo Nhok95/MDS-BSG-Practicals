@@ -15,11 +15,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 rm(list = ls(all.names = TRUE))
-
 ```
 
 
-```{r load packages, echo=FALSE, message=FALSE, warning=FALSE}
+```{r load packages, include=FALSE, message=FALSE, warning=FALSE}
 library(rstudioapi)
 library(genetics)
 library(HardyWeinberg)
@@ -38,17 +37,14 @@ files: https://www.cog-genomics.org/plink/1.9/formats#bim
 
 ## 2. Load the FOXP2.dat file into the R environment. How many individuals and how many SNPs are there in the database? What percentage of the data is missing?
 
-```{r}
-# load data
+```{r load_data_question_1_2, echo=FALSE}
 genotypeData <- read.table("FOXP2.dat", header = TRUE)
 genotypeData <- genotypeData[, 2: ncol(genotypeData)]
 ```
 
-
-```{r}
+```{r question_2}
 individuals <- nrow(genotypeData); individuals
 SNPs <- ncol(genotypeData); SNPs 
-
 perc.mis <- 100*sum(is.na(genotypeData))/(SNPs*individuals); perc.mis
 ```
 
@@ -56,66 +52,51 @@ We have 104 individuals and 543 SNPs (variants) in the dataset. No missing data.
 
 ## 3. Determine the genotype counts for each SNP, and depict all SNPs simultaeneously in a ternary plot, and comment on your result. For how many variants do you reject Hardy-Weinberg equilibrium using an ordinary chi-square test without continuity correction? (hint: you can read the .bim in R in order to determine the alleles of each SNP, and use function MakeCounts from the HardyWeinberg package to create a matrix of genotype counts). ‘
 
-```{r}
-# load data
+```{r load_data_question_1_3, echo=FALSE}
 variantsColnames <- c("chromosome", "SNP id", "position", "basepair coordinate", "Allele 1", "Allele 2")
 variantsData <- read.table("FOXP2.bim", header = FALSE, col.names = variantsColnames)
 ```
 
-```{r}
+```{r question_3_1, out.width = "80%", fig.align="center"}
 alleles.SNP <- paste(variantsData[,"Allele.1"], variantsData[,"Allele.2"], sep="/")
-
 genotype.counts <- MakeCounts(genotypeData, alleles.SNP, sep="/")[,1:3]
-
 HWTernaryPlot(genotype.counts)
 ```
 
-It seems that the majority of the SNPs follows the HWE
+It seems that the majority of the SNPs follow the HWE.
 
-```{r}
-
+```{r question_3_2}
 chisq.pvalues <- HWChisqStats(genotype.counts, pvalues = TRUE)
-
 sum(chisq.pvalues < 0.05)
-
 ```
 
-There are 33 SNPs whose p-values is below the 0.05 threshold. We cannot say statistically that these variants follows the HWE.
+There are 33 SNPs whose p-values are below the 0.05 threshold. This means that, statistically, these variants follow the HWE.
 
 ## 4. Using the function LD from the genetics package, compute the LD statistic D for the SNPs rs34684677 and rs2894715 of the database. Is there significant association between the alleles of these two SNPs? 
 
-```{r}
-
+```{r question_4}
 rs34684677 <- genotypeData[, "rs34684677"]
 rs2894715 <- genotypeData[, "rs2894715"]
-
 rs34684677.g <- genotype(rs34684677,sep="/")
 rs2894715.g <- genotype(rs2894715,sep="/")
-
 LD(rs34684677.g,rs2894715.g)
-
 ```
 
 We can notice that the estimated D is negative (-0.055), then we are on the repulsion case, this entails that probability of heterozygotes is higher than the expected under independence, the standarize D or D' has value near to 1 (0.999). As D' is close to 1 we can say that this variables have a high LD. Since p-value is below 0.05 we can reject the H0 that states that D=0 (D'=0 and cor=0) and confirm that estimated values for D, D' and correlation are valids.
 
 ## 5. Also compute the LD statistic D for the SNPs rs34684677 and rs998302 of the database. Is there significant association between these two SNPs? Is there any reason why rs998302 could have stronger or weaker correlation than rs2894715?
 
-```{r}
-
+```{r question_5}
+# rs34684677 and rs998302
 rs34684677 <- genotypeData[,"rs34684677"]
 rs998302 <- genotypeData[,"rs998302"]
-
 rs34684677.g <- genotype(rs34684677, sep="/")
 rs998302.g <- genotype(rs998302, sep="/")
-
 LD(rs34684677.g,rs998302.g)
-
 # rs2894715 and rs34684677
 rs2894715 <- genotypeData[,"rs2894715"]
 rs2894715.g <- genotype(rs2894715, sep="/")
-
 LD(rs34684677.g,rs2894715.g)
-
 ```
 
 In the case rs34684677 and rs998302,  p-value is > 0.05, therefore, we cannot reject the null hypothesis and we have to say that the D, D' and correlation estimates are not valid (not significantly different to 0).
@@ -126,11 +107,17 @@ D´ is very close to 1, so there's a high LD.
 
 ## 6. Given your previous estimate of D for SNPs rs34684677 and rs2894715, infer the haplotype frequencies. Which haplotype is the most common?
 
-```{r}
-
-## ??? EM algorithm??
-
+```{r question_6}
+snp1 <- unname(sapply(rs34684677, function (x) str_replace_all(x, "/", "")))
+snp2 <- unname(sapply(rs2894715, function (x) str_replace_all(x, "/", "")))
+Geno <- cbind(substr(snp1,1,1),substr(snp1,2,2),
+              substr(snp2,1,1),substr(snp2,2,2))
+snpnames <- c("rs34684677","rs2894715")
+HaploEM <- haplo.em(Geno,locus.label=snpnames,control=haplo.em.control(min.posterior=1e-4))
+HaploEM$hap.prob
 ```
+
+From the EM algorithm output we can observe that the most commmon haplotype is GT, with probability 0.5.
 
 ## 7. Compute the LD statistics R2 for all the marker pairs in this data base, using the LD function of the packages genetics. Be prepared that this make take a few minutes. Also compute an alternative estimate of R2 obtained by using the PLINK program.
 
@@ -139,36 +126,32 @@ For this purpose you should:
 * Take care to store the files FOXP2.bim, FOXP2.fam and FOXP2.bed in a directory where PLINK can find them.
 * Compute LD estimates with PLINK using plink --bfile FOXP2 --r2 --matrix --out FOXP2.ld. This creates a file with extension FOXP2.ld that contains a matrix with all R2 statistics. Read this file into the R environment. Make a scatter plot for R’s LD estimates against PLINK’s LD estimates. Are they identical or do they at least correlate? What’s the difference between these two estimators? Which estimator would your prefer and why?
 
-
-```{r include=FALSE}
-
-# R_estimates <- LD(makeGenotypes(genotypeData))
-# R_estimates <- R_estimates$`R^2`
-# plinkstring01 <- "plink --bfile FOXP2 --r2 --matrix --out FOXP2"
-# system(plinkstring01)
-# PLINK_estimates <- read.table("FOXP2.ld", header = TRUE)
-# write.table(R_estimates, file="R_estimates_q_7.Rdata")
-# write.table(PLINK_estimates, file="PLINK_estimates_q_7.Rdata")
-
+```{r question_7_1, eval=FALSE}
+R_estimates <- LD(makeGenotypes(genotypeData))
+R_estimates <- R_estimates$`R^2`
+plinkstring01 <- "plink --bfile FOXP2 --r2 --matrix --out FOXP2"
+system(plinkstring01)
+PLINK_estimates <- read.table("FOXP2.ld", header = TRUE)
+write.table(R_estimates, file="R_estimates_q_7.Rdata")
+write.table(PLINK_estimates, file="PLINK_estimates_q_7.Rdata")
 ```
 
-```{r}
-
+```{r question_7_2, eval=FALSE}
 R_estimates_q_7 <- read.table("R_estimates_q_7.Rdata")
 PLINK_estimates_q_7 <- read.table("PLINK_estimates_q_7.Rdata")
 R_estimates_q_7 <- R_estimates_q_7[2:dim(R_estimates_q_7)[1],]
 R_estimates_q_7 <- as.vector(t(replace(R_estimates_q_7, is.na(R_estimates_q_7), 0)))
 PLINK_estimates_q_7 <- as.vector(t(replace(PLINK_estimates_q_7, is.na(PLINK_estimates_q_7), 0)))
-# plot(R_estimates_q_7, PLINK_estimates_q_7)
-
+plot(R_estimates_q_7, PLINK_estimates_q_7)
 ```
+
+![unchanged image](images/scatter_plot_ex_1_7.png)
 
 The scatter plot of both estimates (R vs. PLINK) shows that there's a correlation between them. However, we have noticed that there are case where the PLINK estimate is 1 and the R estimate is 0, this is probably due to the fact that we have imputed the NAs as 0s, but still interesting because this means that in some cases R fails calculating the R2 and PLINK does not, so this later would be preferred.
 
 ## 8. Compute a distance matrix with the distance in base pairs between all possible pairs of SNPs, using the basepair position of each SNP given in the .bim file. Make a plot of R’s R2 statistics against the distance (expressed as the number of basepairs) between the markers. Comment on your results.
 
-```{r}
-
+```{r question_8, eval=FALSE}
 basepair_pos_df <- read.table("FOXP2.bim")
 rownames(basepair_pos_df) <- basepair_pos_df$V2
 basepair_pos_df <- basepair_pos_df %>% dplyr::select(V4)
@@ -176,92 +159,105 @@ basepair_dist_df <- as.matrix(dist(basepair_pos_df, method = "manhattan"))
 diag(basepair_dist_df) <- NA # we have the elements of the diagonal in the matrix
 basepair_dist <- as.vector(basepair_dist_df)
 basepair_dist <- basepair_dist[!is.na(basepair_dist)]
-# plot(R_estimates_q_7, basepair_dist)
-
+plot(R_estimates_q_7, basepair_dist)
 ```
+
+![unchanged image](images/scatter_plot_ex_1_8.png)
 
 In the resulting plot we can observe that SNPs which are very distant from each other are generally not highly correlated, except in some very rare cases that could be considered outliers.
 
 ## 9. Make an LD heatmap of the markers in this database, using the R2 statistic with the LD function. Make another heatmap obtained by filtering out all variants with a MAF below 0.35, and redoing the computations to obtain the R2 statistics in R. Can you explain any differences observed between the two heatmaps?
 
-```{r}
-
-# Do not uncomment, execution takes a lot!! Output images have been stored in the repo
-
+```{r question_9, eval=FALSE}
 rgb.palette <- colorRampPalette(rev(c("blue", "orange", "red")), space = "rgb")
-
-# LDheatmap(makeGenotypes(genotypeData), LDmeasure="r", color=rgb.palette(18)) # r stands for R2
+LDheatmap(makeGenotypes(genotypeData), LDmeasure="r", color=rgb.palette(18)) # r stands for R2
 maf_mask <- maf(genotype.counts) < 0.35
-# LDheatmap(makeGenotypes(genotypeData[,maf_mask]), LDmeasure="r", color=rgb.palette(18)) # r stands for R2
-
+LDheatmap(makeGenotypes(genotypeData[,maf_mask]), LDmeasure="r", color=rgb.palette(18)) # r stands for R2
 ```
+
+![half-size image](images/heatmap_not_filtered_ex_1_9.png){#id .class width=50% height=50%}
+
+![half-size image](images/heatmap_filtered_ex_1_9.png){#id .class width=50% height=50%}
 
 ## 10. Can you distinguish blocks of correlated markers in the area of the FOXP2 gene? How many blocks do you think that at least seem to exist?
 
-[...observe the plots from 9...]
+Observing the plots from question 9, it seems that there exist at least 2 blocks of correlated markers.
 
 ## 11. Simulate independent SNPs under the assumption of Hardy-Weinberg equilibrium, using R’s sample instruction sample(c("AA","AB","BB"),n,replace=TRUE,prob=c(p\*p,2\*p\*q,q\*q))). Simulate as many SNPs as you have in your database, and take care to match each SNP in your database with a simulated SNP that has the same sample size and allele frequency. Make an LD heatmap of the simulated SNPs, using R2 as your statistic. Compare the results with the LD heatmap of the FOXP2 region. What do you observe? State your conclusions.
 
-```{r}
-
+```{r question_11, eval=FALSE}
+n <- dim(genotypeData)[1]
+m <- dim(genotypeData)[2]
+M <- matrix(0, n, m)
+for (i in 1:m) {
+  p <- unname(af(genotype.counts[i,]))
+  q <- 1 - p
+  M[,i] <- sample(c("AA","AB","BB"),n,replace=TRUE,prob=c(p*p,2*p*q,q*q))
+}
+M <- as.data.frame(M)
+M <- M %>% mutate(across(everything(), function(x) genotype(x, sep="")))
+rgb.palette <- colorRampPalette(rev(c("blue", "orange", "red")), space = "rgb")
+LDheatmap(makeGenotypes(M), LDmeasure="r", color=rgb.palette(18))
 ```
+
+![half-size image](images/heatmap_ex_1_11.png){#id .class width=50% height=50%}
+
+In the heatmap of the simulated SNPs under Hardy-Weinberg equilibrium, it is clearly observable that there are no identifiable correlation blocks of SNPs as in the case of the heatmap of the FOXP2 region's SNPs. This present correlation for some SNPs of the FOXP2 region suggests that the underlying cause is that there are not independent from each other.
 
 # Haplotype estimation
 
 ## 1. 
 
-```{r}
+```{r load_data_question_2_1, include=FALSE}
 
-haploData <- read.table("APOE/APOE.dat", header = TRUE)
-haploData <- haploData[, 2: ncol(haploData)]
 
 ```
 
 ## 2. 
 
-```{r}
+```{r include=FALSE}
 
 
 ```
 
 ## 3. 
 
-```{r}
+```{r include=FALSE}
 
 
 ```
 
 ## 4. 
 
-```{r}
+```{r include=FALSE}
 
 
 ```
 
 ## 5. 
 
-```{r}
+```{r include=FALSE}
 
 
 ```
 
 ## 6. 
 
-```{r}
+```{r include=FALSE}
 
 
 ```
 
 ## 7. 
 
-```{r}
+```{r include=FALSE}
 
 
 ```
 
 ## 8. 
 
-```{r}
+```{r include=FALSE}
 
 
 ```
