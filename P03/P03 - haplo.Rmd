@@ -162,18 +162,20 @@ For this purpose you should:
 
 # Haplotype estimation
 
-## 1. 
+## Load data
 
 ```{r}
 haploData <- read.table("APOE/APOE.dat", header = TRUE)
 haploData <- haploData[, 2: ncol(haploData)]
-
 ```
 
 ## 2. How many individuals and how many SNPs are there in the database? What percentage of the data is missing?
 
 ```{r}
+individuals <- nrow(haploData); individuals
+SNPs <- ncol(haploData); SNPs 
 
+perc.mis <- 100*sum(is.na(haploData))/(SNPs*individuals); perc.mis
 
 ```
 
