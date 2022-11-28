@@ -183,7 +183,7 @@ LDheatmap(makeGenotypes(genotypeData[,maf_mask]), LDmeasure="r", color=rgb.palet
 
 Observing the plots from question 9, it seems that there exist at least 2 blocks of correlated markers.
 
-## 11. Simulate independent SNPs under the assumption of Hardy-Weinberg equilibrium, using R’s sample instruction sample(c("AA","AB","BB"),n,replace=TRUE,prob=c(p\*p,2\*p\*q,q\*q))). Simulate as many SNPs as you have in your database, and take care to match each SNP in your database with a simulated SNP that has the same sample size and allele frequency. Make an LD heatmap of the simulated SNPs, using R2 as your statistic. Compare the results with the LD heatmap of the FOXP2 region. What do you observe? State your conclusions.
+## 11. Simulate independent SNPs under the assumption of Hardy-Weinberg equilibrium, using R’s sample instruction [...]. Simulate as many SNPs as you have in your database, and take care to match each SNP in your database with a simulated SNP that has the same sample size and allele frequency. Make an LD heatmap of the simulated SNPs, using R2 as your statistic. Compare the results with the LD heatmap of the FOXP2 region. What do you observe? State your conclusions.
 
 ```{r question_11, eval=FALSE}
 n <- dim(genotypeData)[1]
@@ -206,58 +206,72 @@ In the heatmap of the simulated SNPs under Hardy-Weinberg equilibrium, it is cle
 
 # Haplotype estimation
 
-## 1. 
+## 1. Load data
 
-```{r load_data_question_2_1, include=FALSE}
+```{r load_data_question_2_1}
+haploData <- read.table("APOE/APOE.dat", header = TRUE)
+haploData <- haploData[, 2: ncol(haploData)]
+```
+
+## 2. How many individuals and how many SNPs are there in the database? What percentage of the data is missing?
+
+```{r question_2_2}
+individuals <- nrow(haploData); individuals
+SNPs <- ncol(haploData); SNPs 
+perc.mis <- 100*sum(is.na(haploData))/(SNPs*individuals); perc.mis
+```
+
+We have 107 individuals and 162 SNPs (variants) in the dataset. No missing data.
+
+## 3. Assuming all SNPs are bi-allelic, how many haplotypes can theoretically be found for this data set?
+
+Assuming all SNPs are bi-allelic, there are 2^m possible haplotypes, so 2^152 being m the number of SNPs (5.8460065e+48).
+
+## 4. Estimate haplotype frequencies using the haplo.stats package (set the minimum posterior probability to 0.001). How many haplotypes do you find? List the estimated probabilities in decreasing order. Which haplotype number is the most common?
+
+```{r question_2_4}
+snp_mat <- haploData %>%
+            mutate(across(everything(),
+              function(x) unname(sapply(x, function (x) str_replace_all(x, "/", "")))))
+index <- 1
+Geno <- cbind(substr(snp_mat[,index],1,1),substr(snp_mat[,index],2,2))
+snpnames <- c(names(haploData)[index])
+for (snp_i in 1:(SNPs - 1)) {
+  index <- index + 1
+  Geno <- cbind(Geno, substr(snp_mat[,index],1,1),substr(snp_mat[,index],2,2))
+  snpnames <- c(snpnames, names(haploData)[index])
+}
+HaploEM <- haplo.em(Geno,locus.label=snpnames,control=haplo.em.control(min.posterior=1e-4))
+sort(HaploEM$hap.prob, decreasing=TRUE)
+which.max(HaploEM$hap.prob)
+```
+
+Haplotype number 27 of the 31 is the most common.
+
+## 5. Is the haplotypic constitution of any of the individuals in the database ambiguous or uncertain? For how many? What is the most likely haplotypic constitution of individual NA20763? (identify the constitution by the corresponding haplotype numbers).
+
+```{r question_2_5, include=FALSE}
 
 
 ```
 
-## 2. 
+## 6. Suppose we would delete polymorphism rs374311741 from the database prior to haplotype estimation. Would this affect the results obtained? Justify your answer.
 
-```{r include=FALSE}
-
-
-```
-
-## 3. 
-
-```{r include=FALSE}
+```{r question_2_6, include=FALSE}
 
 
 ```
 
-## 4. 
+## 7. Remove all genetic variants that have a minor allele frequency below 0.10 from the database, and re-run haplo.em. How does this affect the number of haplotypes?
 
-```{r include=FALSE}
-
-
-```
-
-## 5. 
-
-```{r include=FALSE}
+```{r question_2_7, include=FALSE}
 
 
 ```
 
-## 6. 
+## 8. We could consider the newly created haplotypes in our last run of haplo.em as the alleles of a new superlocus. Which is, under the assumption of Hardy-Weinberg equilibrium, the most likely genotype at this new locus? What is the probability of this genotype? Which genotype is the second most likely, and what is its probability?
 
-```{r include=FALSE}
-
-
-```
-
-## 7. 
-
-```{r include=FALSE}
-
-
-```
-
-## 8. 
-
-```{r include=FALSE}
+```{r question_2_8, include=FALSE}
 
 
 ```
