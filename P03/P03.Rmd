@@ -128,9 +128,17 @@ D´ is very close to 1, so there's a high LD.
 
 ```{r}
 
-## ??? EM algorithm??
+snp1 <- unname(sapply(rs34684677, function (x) str_replace_all(x, "/", "")))
+snp2 <- unname(sapply(rs2894715, function (x) str_replace_all(x, "/", "")))
+Geno <- cbind(substr(snp1,1,1),substr(snp1,2,2),
+              substr(snp2,1,1),substr(snp2,2,2))
+snpnames <- c("rs34684677","rs2894715")
+HaploEM <- haplo.em(Geno,locus.label=snpnames,control=haplo.em.control(min.posterior=1e-4))
+HaploEM$hap.prob
 
 ```
+
+From the EM algorithm output we can observe that the most commmon haplotype is GT, with probability 0.5.
 
 ## 7. Compute the LD statistics R2 for all the marker pairs in this data base, using the LD function of the packages genetics. Be prepared that this make take a few minutes. Also compute an alternative estimate of R2 obtained by using the PLINK program.
 
