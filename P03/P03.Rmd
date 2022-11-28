@@ -38,7 +38,7 @@ files: https://www.cog-genomics.org/plink/1.9/formats#bim
 ## 2. Load the FOXP2.dat file into the R environment. How many individuals and how many SNPs are there in the database? What percentage of the data is missing?
 
 ```{r load_data_question_1_2, echo=FALSE}
-genotypeData <- read.table("FOXP2.dat", header = TRUE)
+genotypeData <- read.table("FOXP2/FOXP2.dat", header = TRUE)
 genotypeData <- genotypeData[, 2: ncol(genotypeData)]
 ```
 
@@ -54,7 +54,7 @@ We have 104 individuals and 543 SNPs (variants) in the dataset. No missing data.
 
 ```{r load_data_question_1_3, echo=FALSE}
 variantsColnames <- c("chromosome", "SNP id", "position", "basepair coordinate", "Allele 1", "Allele 2")
-variantsData <- read.table("FOXP2.bim", header = FALSE, col.names = variantsColnames)
+variantsData <- read.table("FOXP2/FOXP2.bim", header = FALSE, col.names = variantsColnames)
 ```
 
 ```{r question_3_1, out.width = "80%", fig.align="center"}
@@ -250,24 +250,60 @@ Haplotype number 27 of the 31 is the most common.
 
 ## 5. Is the haplotypic constitution of any of the individuals in the database ambiguous or uncertain? For how many? What is the most likely haplotypic constitution of individual NA20763? (identify the constitution by the corresponding haplotype numbers).
 
-```{r question_2_5, include=FALSE}
+```{r question_2_5}
 
+NA20763.ID <- which(individualData["IID"] == "NA20763")
 
 ```
 
 ## 6. Suppose we would delete polymorphism rs374311741 from the database prior to haplotype estimation. Would this affect the results obtained? Justify your answer.
 
 ```{r question_2_6, include=FALSE}
-
+rs374311741 <- haploData[,"rs374311741"]
 
 ```
 
+If we have a look to the variant rs374311741, we can realize that is an homozygote (only "C/C").
 ## 7. Remove all genetic variants that have a minor allele frequency below 0.10 from the database, and re-run haplo.em. How does this affect the number of haplotypes?
 
-```{r question_2_7, include=FALSE}
+```{r question_2_7_1}
 
+maf.list <- vector(mode="numeric", length=SNPs)
 
+for (i in 1:SNPs) {
+  variant.g <- genotype(haploData[, i],sep="/")
+  variant.g.summary <- summary(variant.g)
+  
+  # MAF 
+  maf.list[i] <- min(variant.g.summary$allele.freq[,"Proportion"], na.rm = T)
+
+}
+
+maf.ind <- which(maf.list < 0.1)
+
+haploData.2 <- haploData[,-maf.ind]
 ```
+
+
+```{r question_2_7_2}
+SNPs.2 <- ncol(haploData.2);
+snp_mat.2 <- haploData.2 %>%
+            mutate(across(everything(),
+              function(x) unname(sapply(x, function (x) str_replace_all(x, "/", "")))))
+index <- 1
+Geno.2 <- cbind(substr(snp_mat.2[,index],1,1),substr(snp_mat.2[,index],2,2))
+snpnames.2 <- c(names(haploData.2)[index])
+for (snp_i in 1:(SNPs.2 - 1)) {
+  index <- index + 1
+  Geno.2 <- cbind(Geno.2, substr(snp_mat.2[,index],1,1),substr(snp_mat.2[,index],2,2))
+  snpnames.2 <- c(snpnames.2, names(haploData.2)[index])
+}
+HaploEM.2 <- haplo.em(Geno.2,locus.label=snpnames.2,control=haplo.em.control(min.posterior=1e-4))
+sort(HaploEM.2$hap.prob, decreasing=TRUE)
+which.max(HaploEM.2$hap.prob)
+```
+
+The number of haplotypes decrease significantly
 
 ## 8. We could consider the newly created haplotypes in our last run of haplo.em as the alleles of a new superlocus. Which is, under the assumption of Hardy-Weinberg equilibrium, the most likely genotype at this new locus? What is the probability of this genotype? Which genotype is the second most likely, and what is its probability?
 
