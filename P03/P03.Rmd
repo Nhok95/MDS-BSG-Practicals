@@ -254,16 +254,40 @@ Haplotype number 27 of the 31 is the most common.
 
 NA20763.ID <- which(individualData["IID"] == "NA20763")
 
+snp_mat.NA20763.ID <- haploData[NA20763.ID,] %>%
+            mutate(across(everything(),
+              function(x) unname(sapply(x, function (x) str_replace_all(x, "/", "")))))
+
 ```
 
 ## 6. Suppose we would delete polymorphism rs374311741 from the database prior to haplotype estimation. Would this affect the results obtained? Justify your answer.
 
-```{r question_2_6, include=FALSE}
-rs374311741 <- haploData[,"rs374311741"]
+```{r question_2_6}
+rs374311741 <- haploData[,"rs374311741"]; rs374311741
+
+haploData.2 <- data.frame(haploData)
+haploData.2[,"rs374311741"] <- NULL
+
+SNPs.2 <- ncol(haploData.2);
+snp_mat.2 <- haploData.2 %>%
+            mutate(across(everything(),
+              function(x) unname(sapply(x, function (x) str_replace_all(x, "/", "")))))
+index <- 1
+Geno.2 <- cbind(substr(snp_mat.2[,index],1,1),substr(snp_mat.2[,index],2,2))
+snpnames.2 <- c(names(haploData.2)[index])
+for (snp_i in 1:(SNPs.2 - 1)) {
+  index <- index + 1
+  Geno.2 <- cbind(Geno.2, substr(snp_mat.2[,index],1,1),substr(snp_mat.2[,index],2,2))
+  snpnames.2 <- c(snpnames.2, names(haploData.2)[index])
+}
+HaploEM.2 <- haplo.em(Geno.2,locus.label=snpnames.2,control=haplo.em.control(min.posterior=1e-4))
+sort(HaploEM.2$hap.prob, decreasing=TRUE)
+which.max(HaploEM.2$hap.prob)
 
 ```
 
-If we have a look to the variant rs374311741, we can realize that is an homozygote (only "C/C").
+If we have a look to the variant rs374311741, we can realize that is an homozygote (only "C/C"). The result will not have a huge impact since a homozygote is considered a unambiguous haplotype and the variability will not be affected. If we recalculate the Haplotypes we will find that values remain without important changes.
+
 ## 7. Remove all genetic variants that have a minor allele frequency below 0.10 from the database, and re-run haplo.em. How does this affect the number of haplotypes?
 
 ```{r question_2_7_1}
@@ -303,11 +327,33 @@ sort(HaploEM.2$hap.prob, decreasing=TRUE)
 which.max(HaploEM.2$hap.prob)
 ```
 
-The number of haplotypes decrease significantly
+The number of haplotypes decrease significantly. Since haplotypes variations are added by the MAF (that introduce variations to the existing haplotypes).
 
 ## 8. We could consider the newly created haplotypes in our last run of haplo.em as the alleles of a new superlocus. Which is, under the assumption of Hardy-Weinberg equilibrium, the most likely genotype at this new locus? What is the probability of this genotype? Which genotype is the second most likely, and what is its probability?
 
-```{r question_2_8, include=FALSE}
+```{r question_2_8}
+haplo <- HaploEM.2$haplotype
+haplo.freq <- HaploEM.2$hap.prob
 
+hPair <- get.hapPair(haplo, haplo.freq, base.index=1)
 
+gen.prob.sorted <- sort(hPair$p.g, index.return=TRUE, decreasing = TRUE)$ix
+
+first <- gen.prob.sorted[1]
+second <- gen.prob.sorted[2]
+
+hPair$p.g[first]
+hPair$x.haplo[first,]
+
+hPair$p.g[second]
+hPair$x.haplo[second,]
+
+paste(as.character(haplo[8,]), collapse=" ")
+```
+
+Under HWE the most likely genotype is the one with a pair of haplotype 8 with a probability of 0.3851883. The second most likely genotype has just 1 haplotype 8, its probability is 0.1624093. 
+
+The haplotype 8 is made up of the following alleles:
+```{r question_2_8_2}
+paste(as.character(haplo[8,]), collapse=" ")
 ```
