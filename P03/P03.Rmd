@@ -198,13 +198,28 @@ maf_mask <- maf(genotype.counts) < 0.35
 
 ## 10. Can you distinguish blocks of correlated markers in the area of the FOXP2 gene? How many blocks do you think that at least seem to exist?
 
-[...observe the plots from 9...]
+Observing the plots from question 9, it seems that there exist at least 2 blocks of correlated markers.
 
 ## 11. Simulate independent SNPs under the assumption of Hardy-Weinberg equilibrium, using R’s sample instruction sample(c("AA","AB","BB"),n,replace=TRUE,prob=c(p\*p,2\*p\*q,q\*q))). Simulate as many SNPs as you have in your database, and take care to match each SNP in your database with a simulated SNP that has the same sample size and allele frequency. Make an LD heatmap of the simulated SNPs, using R2 as your statistic. Compare the results with the LD heatmap of the FOXP2 region. What do you observe? State your conclusions.
 
 ```{r}
+n <- dim(genotypeData)[1]
+m <- dim(genotypeData)[2]
+M <- matrix(0, n, m)
 
+for (i in 1:m) {
+  p <- unname(af(genotype.counts[i,]))
+  q <- 1 - p
+  M[,i] <- sample(c("AA","AB","BB"),n,replace=TRUE,prob=c(p*p,2*p*q,q*q))
+}
+M <- as.data.frame(M)
+M <- M %>% mutate(across(everything(), function(x) genotype(x, sep="")))
+
+rgb.palette <- colorRampPalette(rev(c("blue", "orange", "red")), space = "rgb")
+LDheatmap(makeGenotypes(M), LDmeasure="r", color=rgb.palette(18))
 ```
+
+In the heatmap of the simulated SNPs under Hardy-Weinberg equilibrium, it is clearly observable that there are no identifiable correlation blocks of SNPs as in the case of the heatmap of the FOXP2 region's SNPs. This present correlation for some SNPs of the FOXP2 region suggests that the underlying cause is that there are not independent from each other.
 
 # Haplotype estimation
 
