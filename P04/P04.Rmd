@@ -1,0 +1,111 @@
+---
+title: 'Practical 03 SG: LD and Haplotype estimation'
+author: "Carlos Moyano & Kleber Reyes"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+rm(list = ls(all.names = TRUE))
+```
+
+
+```{r load packages, include=FALSE, message=FALSE, warning=FALSE}
+library(rstudioapi)
+library(stringr)
+library(dplyr)
+library(genetics)
+library(data.table)
+library(MASS)
+
+set.seed(2209)
+current_path <- getActiveDocumentContext()$path 
+setwd(dirname(current_path)) 
+```
+
+# Population substructure
+
+```{r load_data_question_1}
+genotypeData <- fread("Chr21.dat", drop = c(1:6))
+```
+
+## 2. Compute the Manhattan distance matrix between the individuals (this may take a few minutes) using R function dist. Include a submatrix of dimension 5 by 5 with the distances between the first 5 individuals in your report.
+
+```{r question_2}
+
+```
+
+## 3. The Manhattan distance (also known as the taxicab metric) is identical to the Minkowsky distance with parameter λ = 1. How does the Manhattan distance relate to the allele sharing distance, where the latter is calculated as two minus the number of shared alleles?
+
+```{r question_3}
+
+```
+
+## 4. Apply metric multidimensional scaling using the Manhattan distance matrix to obtain a map of the individuals, and include your map in your report. Do you think the data come from one homogeneous human population? If not, how many subpopulations do you think the data might come from, and how many individuals pertain to each suppopulation?
+
+```{r question_4}
+
+```
+
+## 5. Report the first 10 eigenvalues of the solution.
+
+```{r question_5}
+
+```
+
+## 6. Does a perfect representation of this n × n distance matrix exist, in n or fewer dimensions? Why so or not?
+
+```{r question_6}
+
+```
+
+## 7. What is the goodness-of-fit of a two-dimensional approximation to your distance matrix? Explain which criterium you have used.
+
+```{r question_7}
+
+```
+
+## 8. Make a plot of the estimated distances (according to your map of individuals) versus the observed distances. What do you observe? Regress estimated distances on observed distances and report the coefficient of determination of the regression.
+
+```{r question_8}
+
+```
+
+## 9. We now try non-metric multidimensional scaling using the isoMDs instruction. We use a random initial configuration. For the sake of reproducibility, make this random initial configuration with the instructions:
+
+```{r question_9}
+
+```
+
+## 10. et the seed of the random number generator to 123. Then run isoMDS a hundred times, each time using a different random initial configuration using the instructions above. Save the final stress-value and the coordinates of each run. Report the stress of the best run, and plot the corresponding map.
+
+```{r question_10}
+
+```
+
+## 11. Make again a plot of the estimated distances (according to your map of individuals of the best run) versus the observed distances, now for the two-dimensional solution of non-metric MDS. Regress estimated distances on observed distances and report the coefficient of determination of the regression.
+
+```{r question_11}
+
+```
+
+## 12. Compute the stress for a 1, 2, 3, 4, . . . , n-dimensional solution, always using the classical MDS solution as an initial configuration. How many dimensions are necessary to obtain a good representation with a stress below 5? Make a plot of the stress against the number of dimensions
+
+```{r question_12}
+
+```
+
+## 13. Compute the correlation matrix between the first two dimensions of a metric MDS and the two-dimensional solution of your best non-metric MDS. Make a scatterplot matrix of the 4 variables. Comment on your findings.
+
+```{r question_13}
+
+```
+
