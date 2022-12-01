@@ -33,8 +33,6 @@ setwd(dirname(current_path))
 
 # Linkage Disequilibrium
 
-files: https://www.cog-genomics.org/plink/1.9/formats#bim
-
 ## 2. Load the FOXP2.dat file into the R environment. How many individuals and how many SNPs are there in the database? What percentage of the data is missing?
 
 ```{r load_data_question_1_2, echo=FALSE}
@@ -210,6 +208,7 @@ In the heatmap of the simulated SNPs under Hardy-Weinberg equilibrium, it is cle
 
 ```{r load_data_question_2_1}
 haploData <- read.table("APOE/APOE.dat", header = TRUE)
+individuals <- haploData[,1]
 haploData <- haploData[, 2: ncol(haploData)]
 ```
 
@@ -252,14 +251,22 @@ Haplotype number 27 of the 31 is the most common.
 
 ```{r question_2_5}
 
-NA20763.ID <- which(individualData["IID"] == "NA20763")
+#variantsColnames <- c("FID", "IID", "FatherID", "MotherID", "Sex", "Phenotype")
+#individualsData <- read.table("APOE/APOE.fam", header = FALSE, col.names = variantsColnames)
 
-snp_mat.NA20763.ID <- haploData[NA20763.ID,] %>%
-            mutate(across(everything(),
-              function(x) unname(sapply(x, function (x) str_replace_all(x, "/", "")))))
+ambiguous <- which(data.frame(HaploEM$nreps)$Freq > 1)
+length(ambiguous)
+
+NA20763.ID <- which(individuals == "NA20763")
+
+HaploEM$hap1code[NA20763.ID]
+HaploEM$hap2code[NA20763.ID]
 
 ```
 
+We consider as ambiguous the ones that has more than one pair of haplotype that can be mapped. There are 19 ambiguus individuals from a total of 107.
+
+The possible haplotypic constitution of NA20763 are haplotypes 8 and 23.
 ## 6. Suppose we would delete polymorphism rs374311741 from the database prior to haplotype estimation. Would this affect the results obtained? Justify your answer.
 
 ```{r question_2_6}
@@ -348,12 +355,11 @@ hPair$x.haplo[first,]
 hPair$p.g[second]
 hPair$x.haplo[second,]
 
-paste(as.character(haplo[8,]), collapse=" ")
 ```
 
 Under HWE the most likely genotype is the one with a pair of haplotype 8 with a probability of 0.3851883. The second most likely genotype has just 1 haplotype 8, its probability is 0.1624093. 
 
 The haplotype 8 is made up of the following alleles:
 ```{r question_2_8_2}
-paste(as.character(haplo[8,]), collapse=" ")
+as.character(haplo[8,])
 ```
