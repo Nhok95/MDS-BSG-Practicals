@@ -41,6 +41,14 @@ genotypeData <- fread("Chr21.dat", drop = c(1:6))
 
 ```{r question_2}
 
+dist.matrix <- dist(genotypeData, method = "manhattan")
+dist.matrix[1:5, 1:5]
+
+```
+
+```{r question_2_store}
+#saveRDS(dist.matrix, file = "dist_matrix.rds")
+readRDS(file = "dist_matrix.rds")
 ```
 
 ## 3. The Manhattan distance (also known as the taxicab metric) is identical to the Minkowsky distance with parameter λ = 1. How does the Manhattan distance relate to the allele sharing distance, where the latter is calculated as two minus the number of shared alleles?
