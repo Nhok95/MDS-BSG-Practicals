@@ -41,26 +41,27 @@ genotypeData <- fread("Chr21.dat", drop = c(1:6))
 
 ```{r question_2}
 
-dist.matrix <- dist(genotypeData, method = "manhattan")
-dist.matrix[1:5, 1:5]
-
+dist.matrix <- as.matrix(dist(genotypeData, method = "manhattan"))
+dist.matrix[1:5,1:5]
 ```
 
-```{r question_2_store}
+```{r question_2_store, include=FALSE}
 #saveRDS(dist.matrix, file = "dist_matrix.rds")
-readRDS(file = "dist_matrix.rds")
+dist.matrix <- readRDS(file = "dist_matrix.rds")
 ```
 
 ## 3. The Manhattan distance (also known as the taxicab metric) is identical to the Minkowsky distance with parameter λ = 1. How does the Manhattan distance relate to the allele sharing distance, where the latter is calculated as two minus the number of shared alleles?
 
 ```{r question_3}
-
+as.matrix(dist(genotypeData[1:5,], method = "minkowski", p=1))
 ```
 
 ## 4. Apply metric multidimensional scaling using the Manhattan distance matrix to obtain a map of the individuals, and include your map in your report. Do you think the data come from one homogeneous human population? If not, how many subpopulations do you think the data might come from, and how many individuals pertain to each suppopulation?
 
-```{r question_4}
+https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/cmdscale
 
+```{r question_4}
+mds.fit <- cmdscale(dist.matrix,eig=TRUE,k=n-27) 
 ```
 
 ## 5. Report the first 10 eigenvalues of the solution.
