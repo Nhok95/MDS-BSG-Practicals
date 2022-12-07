@@ -1,5 +1,5 @@
 ---
-title: 'Practical 03 SG: LD and Haplotype estimation'
+title: 'Practical 04 SG: Population substructure'
 author: "Carlos Moyano & Kleber Reyes"
 date: "`r Sys.Date()`"
 output:
@@ -37,7 +37,6 @@ setwd(dirname(current_path))
 genotypeData <- fread("Chr21.dat", drop = c(1:6))
 dim(genotypeData)
 n <- nrow(genotypeData)
-
 max(genotypeData,na.rm=TRUE)
 min(genotypeData,na.rm=TRUE)
 ```
@@ -45,92 +44,120 @@ min(genotypeData,na.rm=TRUE)
 ## 2. Compute the Manhattan distance matrix between the individuals (this may take a few minutes) using R function dist. Include a submatrix of dimension 5 by 5 with the distances between the first 5 individuals in your report.
 
 ```{r question_2}
-#dist.matrix <- as.matrix(dist(genotypeData, method = "manhattan"))
-#dist.matrix[1:5,1:5]
+#D <- as.matrix(dist(genotypeData, method = "manhattan"))
+#D[1:5,1:5]
 ```
 
 ```{r question_2_store, include=FALSE}
-#saveRDS(dist.matrix, file = "dist_matrix.rds")
-dist.matrix <- readRDS(file = "dist_matrix.rds")
+#saveRDS(D, file = "dist_matrix.rds")
+D <- readRDS(file = "dist_matrix.rds")
 ```
 
 ## 3. The Manhattan distance (also known as the taxicab metric) is identical to the Minkowsky distance with parameter λ = 1. How does the Manhattan distance relate to the allele sharing distance, where the latter is calculated as two minus the number of shared alleles?
 
-```{r question_3}
-as.matrix(dist(genotypeData[1:5,], method = "minkowski", p=1))
-```
+[PENDIENTE PARA CARLOS: Esto es una pregunta sobre qué es lo que relaciona ambas distancias]
 
 ## 4. Apply metric multidimensional scaling using the Manhattan distance matrix to obtain a map of the individuals, and include your map in your report. Do you think the data come from one homogeneous human population? If not, how many subpopulations do you think the data might come from, and how many individuals pertain to each subpopulation?
 
 https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/cmdscale
 
 ```{r question_4}
-mds.out <- cmdscale(dist.matrix,eig=TRUE,k=1)
-
+mds.out <- cmdscale(D,eig=TRUE,k=2)
 mds.out$GOF
-mds.out$eig
-
-#X <- mds.out$points[,1:2]
-
-#eqscplot(mds.out$points,type="n")
-#text(mds.out$point,row.names(genotypeData),cex=.8)
-
-#plot(X[,1],X[,2],asp=1,xlab="First principal axis", ylab="Second principal axis")
+X <- mds.out$points[,1:2]
+eqscplot(mds.out$points,type="n")
+text(mds.out$point,row.names(genotypeData),cex=.8)
+plot(X[,1],X[,2],asp=1,xlab="First principal axis", ylab="Second principal axis")
+print(paste0("There are ", sum(X[,1]<0), " individuales belonging to the 1st subpopulation (1st PC < 0)"))
+print(paste0("There are ", sum(X[,1]>0), " individuales belonging to the 2nd subpopulation (1st PC > 0)"))
 ```
 
-With k=2 we have a godness of fit of 0.17 that represents less than 20% of the population with 
+With k=2, the obtained MDS result clearly shows 2 different human subpopulations. The number of individuals belonging to each subpopulation seems to be around 100 (calculated counting the projected points with values in the 1st PC < 0 and with values > 0).
 
 ## 5. Report the first 10 eigenvalues of the solution.
 
 ```{r question_5}
-
+mds.out$eig[1:10]
 ```
 
 ## 6. Does a perfect representation of this n × n distance matrix exist, in n or fewer dimensions? Why so or not?
 
-```{r question_6}
-
-```
+Since MDS is a *dimensionality reduction* technique having the objective of representing a n x n matrix in **less than** n dimensions (if not there's no dimensionality reduction), of course the answer to this question is affirmative. It's always possible to represent the original n x n matrix perfectly by using the same n dimensions and not performing any kind of dimensionality reduction.
 
 ## 7. What is the goodness-of-fit of a two-dimensional approximation to your distance matrix? Explain which criterium you have used.
 
-```{r question_7}
-
-```
+If the criterium used is the scatter plot of the estimated distance vs. the original distance, a satisfactory GoF means visualizing a linear relationship in the plot. This means that the original distance can be linearly recovered from the estimated distance.
 
 ## 8. Make a plot of the estimated distances (according to your map of individuals) versus the observed distances. What do you observe? Regress estimated distances on observed distances and report the coefficient of determination of the regression.
 
 ```{r question_8}
-
+Dest <- as.matrix(dist(X))
+Dobs.vec <- D[lower.tri(D)]
+Dest.vec <- Dest[lower.tri(Dest)]
+plot(Dobs.vec,Dest.vec,xlab="Observed",ylab="Fitted")
+model <- lm(Dobs.vec~Dest.vec)
+abline(model, col="red")
+summary(model)
 ```
 
-## 9. We now try non-metric multidimensional scaling using the isoMDs instruction. We use a random initial configuration. For the sake of reproducibility, make this random initial configuration with the instructions:
+The adjusted R-squared of the regression is 0.843.
 
-```{r question_9}
+## 9. We now try non-metric multidimensional scaling using the isoMDs instruction. We use a random initial configuration. Make a plot of the two-dimensional solution. Do the results support that
+the data come from one homogeneous population? Try some additional runs of isoMDS with different initial configurations, or eventually using the classical metric solution as the initial solution. What do you observe?
 
+```{r question_9_1}
+k <- 2
+yinit <- matrix(runif(k*n),ncol=k)
+nmds.out <- isoMDS(D,k=k,y=yinit)
+s <- nmds.out$stress
+Z <- nmds.out$points[,1:2]
+plot(Z[,1],Z[,2],asp=1)
+```
+
+In the plot of the non-metric MDS two-dimensional result no more than a single homogeneous population is identifiable. When `isoMDS` is run with different initial configurations (using different seeds/random states), in some cases the circular shape is maintained, but the points seem to be different at first glance, and in others,  instead of a single circular point cloud, there are 2 point clouds of different shape (see the example below).
+
+```{r question_9_2}
+set.seed(105)
+k <- 2
+yinit <- matrix(runif(k*n),ncol=k)
+nmds.out <- isoMDS(D,k=k,y=yinit)
+s <- nmds.out$stress
+Z <- nmds.out$points[,1:2]
+plot(Z[,1],Z[,2],asp=1)
+```
+
+With the classical metrical solution (depicted below), the result is exactly the same as the one obtained in question 4.
+
+```{r question_9_2}
+set.seed(2209) # same seed as at the beginning
+k <- 2
+nmds.out <- isoMDS(D,k=k) # if y is None, classical solution
+s <- nmds.out$stress
+Z <- nmds.out$points[,1:2]
+plot(Z[,1],Z[,2],asp=1)
 ```
 
 ## 10. et the seed of the random number generator to 123. Then run isoMDS a hundred times, each time using a different random initial configuration using the instructions above. Save the final stress-value and the coordinates of each run. Report the stress of the best run, and plot the corresponding map.
 
 ```{r question_10}
-
+[PENDIENTE PARA ENRIQUE]
 ```
 
 ## 11. Make again a plot of the estimated distances (according to your map of individuals of the best run) versus the observed distances, now for the two-dimensional solution of non-metric MDS. Regress estimated distances on observed distances and report the coefficient of determination of the regression.
 
 ```{r question_11}
-
+[PENDIENTE PARA ENRIQUE]
 ```
 
 ## 12. Compute the stress for a 1, 2, 3, 4, . . . , n-dimensional solution, always using the classical MDS solution as an initial configuration. How many dimensions are necessary to obtain a good representation with a stress below 5? Make a plot of the stress against the number of dimensions
 
 ```{r question_12}
-
+[PENDIENTE PARA ENRIQUE]
 ```
 
 ## 13. Compute the correlation matrix between the first two dimensions of a metric MDS and the two-dimensional solution of your best non-metric MDS. Make a scatterplot matrix of the 4 variables. Comment on your findings.
 
 ```{r question_13}
-
+[PENDIENTE PARA ENRIQUE]
 ```
 
