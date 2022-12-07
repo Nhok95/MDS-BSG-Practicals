@@ -35,14 +35,18 @@ setwd(dirname(current_path))
 
 ```{r load_data_question_1}
 genotypeData <- fread("Chr21.dat", drop = c(1:6))
+dim(genotypeData)
+n <- nrow(genotypeData)
+
+max(genotypeData,na.rm=TRUE)
+min(genotypeData,na.rm=TRUE)
 ```
 
 ## 2. Compute the Manhattan distance matrix between the individuals (this may take a few minutes) using R function dist. Include a submatrix of dimension 5 by 5 with the distances between the first 5 individuals in your report.
 
 ```{r question_2}
-
-dist.matrix <- as.matrix(dist(genotypeData, method = "manhattan"))
-dist.matrix[1:5,1:5]
+#dist.matrix <- as.matrix(dist(genotypeData, method = "manhattan"))
+#dist.matrix[1:5,1:5]
 ```
 
 ```{r question_2_store, include=FALSE}
@@ -56,13 +60,25 @@ dist.matrix <- readRDS(file = "dist_matrix.rds")
 as.matrix(dist(genotypeData[1:5,], method = "minkowski", p=1))
 ```
 
-## 4. Apply metric multidimensional scaling using the Manhattan distance matrix to obtain a map of the individuals, and include your map in your report. Do you think the data come from one homogeneous human population? If not, how many subpopulations do you think the data might come from, and how many individuals pertain to each suppopulation?
+## 4. Apply metric multidimensional scaling using the Manhattan distance matrix to obtain a map of the individuals, and include your map in your report. Do you think the data come from one homogeneous human population? If not, how many subpopulations do you think the data might come from, and how many individuals pertain to each subpopulation?
 
 https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/cmdscale
 
 ```{r question_4}
-mds.fit <- cmdscale(dist.matrix,eig=TRUE,k=n-27) 
+mds.out <- cmdscale(dist.matrix,eig=TRUE,k=1)
+
+mds.out$GOF
+mds.out$eig
+
+#X <- mds.out$points[,1:2]
+
+#eqscplot(mds.out$points,type="n")
+#text(mds.out$point,row.names(genotypeData),cex=.8)
+
+#plot(X[,1],X[,2],asp=1,xlab="First principal axis", ylab="Second principal axis")
 ```
+
+With k=2 we have a godness of fit of 0.17 that represents less than 20% of the population with 
 
 ## 5. Report the first 10 eigenvalues of the solution.
 
