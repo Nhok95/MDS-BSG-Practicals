@@ -95,8 +95,8 @@ Dest <- as.matrix(dist(X))
 Dobs.vec <- D[lower.tri(D)]
 Dest.vec <- Dest[lower.tri(Dest)]
 plot(Dobs.vec,Dest.vec,xlab="Observed",ylab="Fitted")
-model <- lm(Dobs.vec~Dest.vec)
-abline(model, col="red")
+model <- lm(Dest.vec~Dobs.vec)
+abline(model, col="red", lwd=2)
 summary(model)
 ```
 
