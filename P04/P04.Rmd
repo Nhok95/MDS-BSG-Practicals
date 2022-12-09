@@ -102,8 +102,11 @@ summary(model)
 
 The adjusted R-squared of the regression is 0.843.
 
-## 9. We now try non-metric multidimensional scaling using the isoMDs instruction. We use a random initial configuration. Make a plot of the two-dimensional solution. Do the results support that
-the data come from one homogeneous population? Try some additional runs of isoMDS with different initial configurations, or eventually using the classical metric solution as the initial solution. What do you observe?
+## 9. We now try non-metric multidimensional scaling using the isoMDs instruction. We use a random initial configuration. or the sake of reproducibility, make this random initial configuration with the instructions:
+
+**Where n represents the sample size. Make a plot of the two-dimensional solution. Do the results support that the data come from one homogeneous population?**
+
+**Try some additional runs of isoMDS with different initial configurations, or eventually using the classical metric solution as the initial solution. What do you observe?**
 
 ```{r question_9_1}
 k <- 2
@@ -137,12 +140,31 @@ Z <- nmds.out$points[,1:2]
 plot(Z[,1],Z[,2],asp=1)
 ```
 
-## 10. et the seed of the random number generator to 123. Then run isoMDS a hundred times, each time using a different random initial configuration using the instructions above. Save the final stress-value and the coordinates of each run. Report the stress of the best run, and plot the corresponding map.
+## 10. Set the seed of the random number generator to 123. Then run isoMDS a hundred times, each time using a different random initial configuration using the instructions above. Save the final stress-value and the coordinates of each run. Report the stress of the best run, and plot the corresponding map.
 
 ```{r question_10}
-[PENDIENTE PARA ENRIQUE]
+set.seed(123)
+
+stress.list = c()
+coordinates.list = c()
+
+for(i in 1:100){
+  init <- matrix(runif(2*n),ncol=2)
+  nmds.out <- isoMDS(D,k=2,y=init,trace=FALSE)
+  stress.list[i] = nmds.out$stress
+  coordinates.list[[i]] = nmds.out$points
+}
+
 ```
 
+```{r question_10_2}
+saveRDS(stress.list, file = "stress.rds")
+saveRDS(coordinates.list, file = "coords.rds")
+```
+
+```{r question_10_2}
+plot(1:5,stress.list,type="b")
+```
 ## 11. Make again a plot of the estimated distances (according to your map of individuals of the best run) versus the observed distances, now for the two-dimensional solution of non-metric MDS. Regress estimated distances on observed distances and report the coefficient of determination of the regression.
 
 ```{r question_11}
