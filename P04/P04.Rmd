@@ -116,6 +116,7 @@ The adjusted R-squared of the regression is 0.843, which is remarkably and indic
 ## 9. We now try non-metric multidimensional scaling using the isoMDs instruction. We use a random initial configuration. or the sake of reproducibility, make this random initial configuration with the instructions. Make a plot of the two-dimensional solution. Do the results support that the data come from one homogeneous population? Try some additional runs of isoMDS with different initial configurations, or eventually using the classical metric solution as the initial solution. What do you observe?
 
 ```{r question_9_1, out.width = "80%", fig.align="center", message=FALSE, warning=FALSE, results='hide'}
+set.seed(12345)
 k <- 2
 yinit <- scale(matrix(runif(k*n),ncol=k),scale=FALSE)
 nmds.out <- isoMDS(D,k=k,y=yinit)
