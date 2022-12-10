@@ -25,6 +25,7 @@ library(dplyr)
 library(genetics)
 library(data.table)
 library(MASS)
+library(corrplot)
 
 set.seed(2209)
 current_path <- getActiveDocumentContext()$path 
@@ -46,7 +47,7 @@ min(genotypeData,na.rm=TRUE)
 ## 2. Compute the Manhattan distance matrix between the individuals (this may take a few minutes) using R function dist. Include a submatrix of dimension 5 by 5 with the distances between the first 5 individuals in your report.
 
 ```{r question_2, eval=FALSE}
-D <- as.matrix(dist(genotypeData, method = "manhattan"))
+#D <- as.matrix(dist(genotypeData, method = "manhattan"))
 ```
 
 ```{r question_2_store, include=FALSE}
@@ -114,7 +115,7 @@ The adjusted R-squared of the regression is 0.843, which is remarkably and indic
 
 ```{r question_9_1, out.width = "80%", fig.align="center", message=FALSE, warning=FALSE, results='hide'}
 k <- 2
-yinit <- matrix(runif(k*n),ncol=k)
+yinit <- scale(matrix(runif(k*n),ncol=k),scale=FALSE)
 nmds.out <- isoMDS(D,k=k,y=yinit)
 s <- nmds.out$stress
 Z <- nmds.out$points[,1:2]
@@ -126,7 +127,7 @@ In the plot of the non-metric MDS two-dimensional result no more than a single h
 ```{r question_9_2, out.width = "80%", fig.align="center", message=FALSE, warning=FALSE, results='hide'}
 set.seed(105)
 k <- 2
-yinit <- matrix(runif(k*n),ncol=k)
+yinit <- scale(matrix(runif(k*n),ncol=k),scale=FALSE)
 nmds.out <- isoMDS(D,k=k,y=yinit)
 s <- nmds.out$stress
 Z <- nmds.out$points[,1:2]
@@ -146,12 +147,14 @@ plot(Z[,1],Z[,2],asp=1)
 
 ## 10. Set the seed of the random number generator to 123. Then run isoMDS a hundred times, each time using a different random initial configuration using the instructions above. Save the final stress-value and the coordinates of each run. Report the stress of the best run, and plot the corresponding map.
 
+We have used the runif function in order to have a different initial configuration in each iteration.
+
 ```{r question_10, message=FALSE, warning=FALSE, results='hide'}
 set.seed(123)
 stress.list = c()
 coordinates.list = c()
 for(i in 1:100){
-  init <- matrix(runif(2*n),ncol=2)
+  init <- scale(matrix(runif(2*n),ncol=2), scale=FALSE)
   nmds.out <- isoMDS(D,k=2,y=init,trace=FALSE)
   stress.list[i] = nmds.out$stress
   coordinates.list[[i]] = nmds.out$points
@@ -159,28 +162,91 @@ for(i in 1:100){
 ```
 
 ```{r question_10_2, include=FALSE}
-saveRDS(stress.list, file = "stress.rds")
-saveRDS(coordinates.list, file = "coords.rds")
+#saveRDS(stress.list, file = "stress.rds")
+#saveRDS(coordinates.list, file = "coords.rds")
+stress.list <- readRDS(file = "stress.rds")
+coordinates.list <- readRDS(file = "coords.rds")
 ```
 
+Our best run is the one with the lowest stress value, once we get the corresponding map we can show plot it.
 ```{r question_10_3, out.width = "80%", fig.align="center"}
+Z <- coordinates.list[[which.min(stress.list)]][,1:2]
+plot(Z[,1], Z[,2])
 # plot(1:5,stress.list,type="b")
 ```
+
+Once again, we have 2 point clouds but this time it looks like the clouds are denser than any attempt we have made before.
+
 ## 11. Make again a plot of the estimated distances (according to your map of individuals of the best run) versus the observed distances, now for the two-dimensional solution of non-metric MDS. Regress estimated distances on observed distances and report the coefficient of determination of the regression.
 
-```{r question_11, include=FALSE}
+```{r question_11}
 
+Dest.best <- as.matrix(dist(Z))
+Dest.best.vec <- Dest.best[lower.tri(Dest.best)]
+
+data1<-data.frame(obs=, exp=Dobs.vec)
+
+plot(Dobs.vec, Dest.best.vec, xlab="Observed", ylab="Fitted")
+model2 <- lm(Dest.best.vec~Dobs.vec)
+abline(model2, col="red", lwd=2)
+
+summary(model2)$r.squared
 ```
+
+This time we can notice a better separation between the 2 point clouds than the obtained in question 8.
+
+The adjusted R-squared of the regression is 0.869, more or less the same as the previous calculation.
 
 ## 12. Compute the stress for a 1, 2, 3, 4, . . . , n-dimensional solution, always using the classical MDS solution as an initial configuration. How many dimensions are necessary to obtain a good representation with a stress below 5? Make a plot of the stress against the number of dimensions
 
-```{r question_12, include=FALSE}
+```{r question_12}
+set.seed(123)
+stress.list2 <- c()
+stress.value = 6
+k = 1
+while(stress.value > 5) {
+  init <- scale(matrix(runif(k*n),ncol=k),scale=FALSE)
+  nmds.out <- isoMDS(D,k=k,y=init, maxit=100, trace=FALSE)
+  stress.value = nmds.out$stress
+  stress.list2[k] = stress.value
+  
+  k = k +1
+  
+}
 
+k-1
+stress.value
 ```
+
+We need 20 dimension to obtain a stress value below 5.
+
+```{r question_12_2, include=FALSE}
+#saveRDS(stress.list2, file = "stress2.rds")
+#saveRDS(stress.value, file = "stress_value.rds")
+#saveRDS(k, file = "k.rds")
+stress.list2 <- readRDS(file = "stress2.rds")
+stress.value <- readRDS(file = "stress_value.rds")
+k <- readRDS(file = "k.rds")
+```
+
+```{r question_12_3}
+plot(1:length(stress.list2), stress.list2,type="b",xlab="k", main="Stress as number of dimensions")
+abline(h=5, col="blue")
+```
+
+In this plot we can see the decreasing trend of stress as the dimensions increase.
+
 
 ## 13. Compute the correlation matrix between the first two dimensions of a metric MDS and the two-dimensional solution of your best non-metric MDS. Make a scatterplot matrix of the 4 variables. Comment on your findings.
 
-```{r question_13, include=FALSE}
+```{r question_13}
+corr.matrix = cbind(X,Z)
+colnames(corr.matrix) = c("MDS.1","MDS.2","NMDS.1","NMDS.2")
+cor.mds = round(cor(corr.matrix), 2)
 
+
+corrplot(cor.mds, method = 'number', type = 'lower', bg = "lightgray")
+
+#pairs(Seatbelts)
 ```
 
