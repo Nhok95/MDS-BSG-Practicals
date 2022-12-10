@@ -97,16 +97,18 @@ If the criterium used is the scatter plot of the estimated distance vs. the orig
 
 ## 8. Make a plot of the estimated distances (according to your map of individuals) versus the observed distances. What do you observe? Regress estimated distances on observed distances and report the coefficient of determination of the regression.
 
-```{r question_8, out.width = "80%", fig.align="center"}
+```{r question_8_1, out.width = "80%", fig.align="center"}
 Dest <- as.matrix(dist(X))
 Dobs.vec <- D[lower.tri(D)]
 Dest.vec <- Dest[lower.tri(Dest)]
-plot(Dobs.vec,Dest.vec,xlab="Observed",ylab="Fitted")
 model <- lm(Dest.vec~Dobs.vec)
-abline(model, col="red", lwd=2)
 summary(model)
 ```
 
+```{r question_8_2, out.width = "80%", fig.align="center", echo=FALSE}
+plot(Dobs.vec,Dest.vec,xlab="Observed",ylab="Fitted")
+abline(model, col="red", lwd=2)
+```
 The output obtained depicts two clouds of points that vaguely remind of a straight diagonal line. This lack of definition in the linear relationship between the estimated distance and the original distance indicates that the GoF of our two-dimensional MDS is not very good.
 
 The adjusted R-squared of the regression is 0.843, which is remarkably and indicates that a high percentage of the variability in the estimated distance can be explained using just the original distance as only explanatory variable of a linear regression.
@@ -149,7 +151,7 @@ plot(Z[,1],Z[,2],asp=1)
 
 We have used the runif function in order to have a different initial configuration in each iteration.
 
-```{r question_10, message=FALSE, warning=FALSE, results='hide'}
+```{r question_10_1, message=FALSE, warning=FALSE, results='hide'}
 set.seed(123)
 stress.list = c()
 coordinates.list = c()
@@ -168,29 +170,27 @@ stress.list <- readRDS(file = "stress.rds")
 coordinates.list <- readRDS(file = "coords.rds")
 ```
 
-Our best run is the one with the lowest stress value, once we get the corresponding map we can show plot it.
-```{r question_10_3, out.width = "80%", fig.align="center"}
+Our best run is the one with the lowest stress value, once we get the corresponding map we can plot it.
+
+```{r question_10_3, out.width = "80%", fig.align="center", echo=FALSE}
 Z <- coordinates.list[[which.min(stress.list)]][,1:2]
 plot(Z[,1], Z[,2])
-# plot(1:5,stress.list,type="b")
 ```
 
 Once again, we have 2 point clouds but this time it looks like the clouds are denser than any attempt we have made before.
 
 ## 11. Make again a plot of the estimated distances (according to your map of individuals of the best run) versus the observed distances, now for the two-dimensional solution of non-metric MDS. Regress estimated distances on observed distances and report the coefficient of determination of the regression.
 
-```{r question_11}
-
+```{r question_11_1}
 Dest.best <- as.matrix(dist(Z))
 Dest.best.vec <- Dest.best[lower.tri(Dest.best)]
-
-data1<-data.frame(obs=, exp=Dobs.vec)
-
-plot(Dobs.vec, Dest.best.vec, xlab="Observed", ylab="Fitted")
 model2 <- lm(Dest.best.vec~Dobs.vec)
-abline(model2, col="red", lwd=2)
-
 summary(model2)$r.squared
+```
+
+```{r question_11_2, out.width = "80%", fig.align="center", echo=FALSE}
+plot(Dobs.vec, Dest.best.vec, xlab="Observed", ylab="Fitted")
+abline(model2, col="red", lwd=2)
 ```
 
 This time we can notice a better separation between the 2 point clouds than the obtained in question 8.
@@ -199,7 +199,7 @@ The adjusted R-squared of the regression is 0.869, more or less the same as the 
 
 ## 12. Compute the stress for a 1, 2, 3, 4, . . . , n-dimensional solution, always using the classical MDS solution as an initial configuration. How many dimensions are necessary to obtain a good representation with a stress below 5? Make a plot of the stress against the number of dimensions
 
-```{r question_12}
+```{r question_12_1}
 set.seed(123)
 stress.list2 <- c()
 stress.value = 6
@@ -209,44 +209,41 @@ while(stress.value > 5) {
   nmds.out <- isoMDS(D,k=k,y=init, maxit=100, trace=FALSE)
   stress.value = nmds.out$stress
   stress.list2[k] = stress.value
-  
   k = k +1
-  
 }
-
 k-1
 stress.value
 ```
 
-We need 20 dimension to obtain a stress value below 5.
+We need 20 dimensions to obtain a stress value below 5.
 
 ```{r question_12_2, include=FALSE}
 #saveRDS(stress.list2, file = "stress2.rds")
 #saveRDS(stress.value, file = "stress_value.rds")
 #saveRDS(k, file = "k.rds")
+```
+
+```{r question_12_3, include=FALSE}
 stress.list2 <- readRDS(file = "stress2.rds")
 stress.value <- readRDS(file = "stress_value.rds")
 k <- readRDS(file = "k.rds")
 ```
 
-```{r question_12_3}
+```{r question_12_4, out.width = "80%", fig.align="center"}
 plot(1:length(stress.list2), stress.list2,type="b",xlab="k", main="Stress as number of dimensions")
 abline(h=5, col="blue")
 ```
 
 In this plot we can see the decreasing trend of stress as the dimensions increase.
 
-
 ## 13. Compute the correlation matrix between the first two dimensions of a metric MDS and the two-dimensional solution of your best non-metric MDS. Make a scatterplot matrix of the 4 variables. Comment on your findings.
 
-```{r question_13}
-corr.matrix = cbind(X,Z)
-colnames(corr.matrix) = c("MDS.1","MDS.2","NMDS.1","NMDS.2")
-cor.mds = round(cor(corr.matrix), 2)
-
-
+```{r question_13, out.width = "80%", fig.align="center"}
+matrix = cbind(X,Z)
+colnames(matrix) = c("MDS.1","MDS.2","NMDS.1","NMDS.2")
+cor.mds = round(cor(matrix), 2)
 corrplot(cor.mds, method = 'number', type = 'lower', bg = "lightgray")
-
-#pairs(Seatbelts)
+pairs(matrix)
 ```
 
+With the info obtained from the correlation matrix and the pairs plot, we can affirm that MDS.1 and NMDS.1 are highly correlated (correlation is 1), but the same DOES NOT HAPPEN with MDS.2 and NMDS.2 (correlation is -0.05). This makes sense *partly* since we expect that both techniques find more or less the same solution (the same dimensions) as part of the dimensionality reduction process. It is remarkable to point out that there's a lot of positive correlation between NMDS.2 and NMDS.1 (correlation is 0.74), while this does not happen between MDS.1 and MDS.2. This behaviour is not desired since we would like to obtain *independent* dimensions, and this seems not to be the case in the output of the best non-metric MDS.
