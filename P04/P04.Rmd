@@ -47,7 +47,7 @@ min(genotypeData,na.rm=TRUE)
 ## 2. Compute the Manhattan distance matrix between the individuals (this may take a few minutes) using R function dist. Include a submatrix of dimension 5 by 5 with the distances between the first 5 individuals in your report.
 
 ```{r question_2, eval=FALSE}
-#D <- as.matrix(dist(genotypeData, method = "manhattan"))
+D <- as.matrix(dist(genotypeData, method = "manhattan"))
 ```
 
 ```{r question_2_store, include=FALSE}
@@ -125,6 +125,9 @@ Z <- nmds.out$points[,1:2]
 plot(Z[,1],Z[,2],asp=1)
 ```
 
+```{r question_9_1_s}
+s
+```
 In the plot of the non-metric MDS two-dimensional result no more than a single homogeneous population is identifiable. When `isoMDS` is run with different initial configurations (using different seeds/random states), in some cases the circular shape is maintained, but the points seem to be different at first glance, and in others,  instead of a single circular point cloud, there are 2 point clouds of different shape (see the example below).
 
 ```{r question_9_2, out.width = "80%", fig.align="center", message=FALSE, warning=FALSE, results='hide'}
@@ -132,20 +135,27 @@ set.seed(105)
 k <- 2
 yinit <- scale(matrix(runif(k*n),ncol=k),scale=FALSE)
 nmds.out <- isoMDS(D,k=k,y=yinit)
-s <- nmds.out$stress
+s <- nmds.out$stress; s
 Z <- nmds.out$points[,1:2]
 plot(Z[,1],Z[,2],asp=1)
 ```
 
+```{r question_9_2_s}
+s
+```
 With the classical metrical solution (depicted below), the result is exactly the same as the one obtained in question 4.
 
 ```{r question_9_3, out.width = "80%", fig.align="center", message=FALSE, warning=FALSE, results='hide'}
 set.seed(2209) # same seed as at the beginning
 k <- 2
 nmds.out <- isoMDS(D,k=k) # if y is None, classical solution
-s <- nmds.out$stress
+s <- nmds.out$stress; s
 Z <- nmds.out$points[,1:2]
 plot(Z[,1],Z[,2],asp=1)
+```
+
+```{r question_9_3_s}
+s
 ```
 
 ## 10. Set the seed of the random number generator to 123. Then run isoMDS a hundred times, each time using a different random initial configuration using the instructions above. Save the final stress-value and the coordinates of each run. Report the stress of the best run, and plot the corresponding map.
@@ -174,11 +184,12 @@ coordinates.list <- readRDS(file = "coords.rds")
 Our best run is the one with the lowest stress value, once we get the corresponding map we can plot it.
 
 ```{r question_10_3, out.width = "80%", fig.align="center", echo=FALSE}
+min(stress.list)
 Z <- coordinates.list[[which.min(stress.list)]][,1:2]
 plot(Z[,1], Z[,2])
 ```
 
-Once again, we have 2 point clouds but this time it looks like the clouds are denser than any attempt we have made before.
+The minimum stress value is 11.40856 that is really close to the obtained with the previous seed 105. Once again, we have 2 point clouds. 
 
 ## 11. Make again a plot of the estimated distances (according to your map of individuals of the best run) versus the observed distances, now for the two-dimensional solution of non-metric MDS. Regress estimated distances on observed distances and report the coefficient of determination of the regression.
 
@@ -242,9 +253,9 @@ In this plot we can see the decreasing trend of stress as the dimensions increas
 ```{r question_13, out.width = "80%", fig.align="center"}
 matrix = cbind(X,Z)
 colnames(matrix) = c("MDS.1","MDS.2","NMDS.1","NMDS.2")
-cor.mds = round(cor(matrix), 2)
+cor.mds = round(cor(matrix, method="spearman"), 2)
 corrplot(cor.mds, method = 'number', type = 'lower', bg = "lightgray")
 pairs(matrix)
 ```
 
-With the info obtained from the correlation matrix and the pairs plot, we can affirm that MDS.1 and NMDS.1 are highly correlated (correlation is 1), but the same DOES NOT HAPPEN with MDS.2 and NMDS.2 (correlation is -0.05). This makes sense *partly* since we expect that both techniques find more or less the same solution (the same dimensions) as part of the dimensionality reduction process. It is remarkable to point out that there's a lot of positive correlation between NMDS.2 and NMDS.1 (correlation is 0.74), while this does not happen between MDS.1 and MDS.2. This behaviour is not desired since we would like to obtain *independent* dimensions, and this seems not to be the case in the output of the best non-metric MDS.
+With the info obtained from the correlation matrix and the pairs plot, we can affirm that MDS.1 and NMDS.1 are highly correlated (correlation is almost 1), but the same DOES NOT HAPPEN with MDS.2 and NMDS.2 (correlation is 0.01). This makes sense *partly* since we expect that both techniques find more or less the same solution (the same dimensions) as part of the dimensionality reduction process. It is remarkable to point out that there's a lot of positive correlation between NMDS.2 and NMDS.1 (correlation is 0.62), while this does not happen between MDS.1 and MDS.2. This behaviour is not desired since we would like to obtain *independent* dimensions, and this seems not to be the case in the output of the best non-metric MDS.
